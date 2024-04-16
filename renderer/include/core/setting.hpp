@@ -14,6 +14,7 @@ public:
     uint32_t appVersion = 1;
     std::string engineName = "engine name";
     uint32_t engineVersion = 1;
+    std::vector<std::string> deviceRequestedExtensions = {};
 
 private:
 };

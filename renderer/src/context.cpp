@@ -31,6 +31,7 @@ void Context::quit() {
 void Context::initialize() {
     createVkInstance();
     createSurface();
+    device = std::make_unique<Device>();
     WEN_INFO("Vulkan Context Initialized!");
 }
 
@@ -101,6 +102,7 @@ void Context::createSurface() {
 }
 
 void Context::destroy() {
+    device.reset();
     vkInstance.destroySurfaceKHR(surface);
     vkInstance.destroy();
     WEN_INFO("Vulkan Context Destroyed!");
