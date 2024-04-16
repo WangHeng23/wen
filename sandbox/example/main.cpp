@@ -8,6 +8,7 @@ int main() {
     wen::settings->windowInfo = {"example", 900, 900};
     wen::settings->debug = true;
     wen::settings->appName = "example";
+    wen::settings->setVsync(true);
 
     // 初始化渲染器
     auto& context = wen::initializeRenderer();

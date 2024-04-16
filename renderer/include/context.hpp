@@ -1,6 +1,7 @@
 #pragma once
 
 #include "device.hpp"
+#include "swapchain.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace wen {
@@ -16,10 +17,13 @@ public:
     void initialize();
     void destroy();
 
+    void recreateSwapchain();
+
 public:
     vk::Instance vkInstance;
     vk::SurfaceKHR surface;
     std::unique_ptr<Device> device;
+    std::unique_ptr<Swapchain> swapchain;
 
 private:
     void createVkInstance();

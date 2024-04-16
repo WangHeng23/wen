@@ -7,11 +7,11 @@ namespace wen {
 Context* manager = nullptr;
 
 void initialize() {
+    logger = new Logger(wen::Logger::Level::trace);
     settings = std::make_shared<Settings>();
 }
 
 Context& initializeRenderer() {
-    logger = new Logger(wen::Logger::Level::trace);
     window = std::make_unique<Window>(settings->windowInfo);
     Context::init();
     Context::instance().initialize();
@@ -31,12 +31,12 @@ void destroyRenderer() {
     Context::quit();
     window.reset();
     window = nullptr;
-    delete logger;
 }
 
 void destroy() {
     settings.reset();
     settings = nullptr;
+    delete logger;
 }
 
 } // namespace wen

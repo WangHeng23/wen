@@ -17,10 +17,10 @@ public:
     uint32_t graphicsQueueFamilyIndex = -1;
     vk::Queue presentQueue;
     uint32_t presentQueueFamilyIndex = -1;
-    vk::Queue computeQueue;
-    uint32_t computeQueueFamilyIndex = -1;
     vk::Queue transferQueue;
     uint32_t transferQueueFamilyIndex = -1;
+    vk::Queue computeQueue;
+    uint32_t computeQueueFamilyIndex = -1;
 
 private:
     bool suitable(const vk::PhysicalDevice& device);

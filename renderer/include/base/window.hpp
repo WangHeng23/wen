@@ -25,8 +25,6 @@ public:
     void destroy();
 
     void* getWindow() const { return window_; }
-    uint32_t width() const { return data_.width; }
-    uint32_t height() const { return data_.height; }
 
 private:
     GLFWwindow* window_;

@@ -32,6 +32,7 @@ void Context::initialize() {
     createVkInstance();
     createSurface();
     device = std::make_unique<Device>();
+    swapchain = std::make_unique<Swapchain>();
     WEN_INFO("Vulkan Context Initialized!");
 }
 
@@ -101,7 +102,20 @@ void Context::createSurface() {
     this->surface = vk::SurfaceKHR(surface);
 }
 
+void Context::recreateSwapchain() {
+    int width = 0, height = 0;
+    GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(window->getWindow());
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(glfwWindow, &width, &height);
+        glfwWaitEvents();
+    }
+    device->device.waitIdle();
+    swapchain.reset();
+    swapchain = std::make_unique<Swapchain>();
+}
+
 void Context::destroy() {
+    swapchain.reset();
     device.reset();
     vkInstance.destroySurfaceKHR(surface);
     vkInstance.destroy();

@@ -70,8 +70,8 @@ Device::Device() {
     std::map<std::string, bool> requiredExtensions = {
         {VK_KHR_SWAPCHAIN_EXTENSION_NAME, false},
     };
-    for (const auto& ex : settings->deviceRequestedExtensions) {
-        requiredExtensions.insert(std::make_pair(ex, false));
+    for (uint32_t i = 0; i < settings->deviceRequestedExtensions.size(); i++) {
+        requiredExtensions.insert(std::make_pair(settings->deviceRequestedExtensions[i], false));
     }
 
     std::vector<const char*> extensions;
@@ -87,7 +87,7 @@ Device::Device() {
         }
     }
     for (const auto& [ex, success] : requiredExtensions) {
-        WEN_ASSERT(success, "Required extension not found: {}", ex);
+        WEN_ASSERT(success, "{} don't found in requiredExtensions", ex)
     }
     deviceCreateInfo.setPEnabledExtensionNames(extensions);
 
@@ -128,7 +128,7 @@ bool Device::suitable(const vk::PhysicalDevice& device) {
     auto features = device.getFeatures();
 
     if (properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu) {
-        WEN_WARN("Device not discrete GPU: {}", properties.deviceName)
+        WEN_WARN("Device is not a discrete GPU: {}", properties.deviceName)
         return false;
     }
 
@@ -155,13 +155,15 @@ bool Device::suitable(const vk::PhysicalDevice& device) {
     auto queueFamilyProperties = device.getQueueFamilyProperties();
     uint32_t queueFamilyIndex = 0;
     bool found = false;
-    for (const auto& queueFamily : queueFamilyProperties) {
-        if ((queueFamily.queueFlags & (vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eTransfer | vk::QueueFlagBits::eCompute))
+    for (auto queueFamily : queueFamilyProperties) {
+        if ((queueFamily.queueFlags & (vk::QueueFlagBits::eGraphics |
+                                       vk::QueueFlagBits::eTransfer |
+                                       vk::QueueFlagBits::eCompute))
             && (device.getSurfaceSupportKHR(queueFamilyIndex, manager->surface))) {
             graphicsQueueFamilyIndex = queueFamilyIndex;
             presentQueueFamilyIndex = queueFamilyIndex;
-            computeQueueFamilyIndex = queueFamilyIndex;
             transferQueueFamilyIndex = queueFamilyIndex;
+            computeQueueFamilyIndex = queueFamilyIndex;
             found = true;
             break;
         }
