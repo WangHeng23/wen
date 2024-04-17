@@ -14,4 +14,7 @@ vk::ImageView createImageView(
     uint32_t levelCount, uint32_t layerCount = 1, vk::ImageViewType viewType = vk::ImageViewType::e2D
 );
 
+// read shader file
+std::vector<char> readFile(const std::string& name);
+
 } // namespace wen

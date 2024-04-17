@@ -33,6 +33,7 @@ void Context::initialize() {
     createSurface();
     device = std::make_unique<Device>();
     swapchain = std::make_unique<Swapchain>();
+    commandPool = std::make_unique<CommandPool>(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
     WEN_INFO("Vulkan Context Initialized!");
 }
 
@@ -115,6 +116,7 @@ void Context::recreateSwapchain() {
 }
 
 void Context::destroy() {
+    commandPool.reset();
     swapchain.reset();
     device.reset();
     vkInstance.destroySurfaceKHR(surface);

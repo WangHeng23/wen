@@ -28,8 +28,14 @@ public:
     std::optional<vk::SurfaceFormatKHR> desiredFormat = std::nullopt;
     std::optional<vk::PresentModeKHR> desiredPresentMode = std::nullopt;
     bool vsync = false;
+
+    uint32_t maxFramesInFlight = 2;
+    uint32_t currentInFlight = 0;
 };
 
 extern std::shared_ptr<Settings> settings;
+
+const std::string SWAPCHAIN_IMAGE_ATTACHMENT = "SWAPCHAIN_IMAGE_ATTACHMENT";
+const std::string EXTERNAL_SUBPASS = "EXTERNAL_SUBPASS";
 
 } // namespace wen
