@@ -54,10 +54,12 @@ int main() {
         };
 
         const std::vector<Vertex> vertices = {
-            {{ 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}},
-            {{-0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{ 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
+            {{ 0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+            {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
         };
+        const std::vector<uint16_t> indices = {0, 1, 2, 1, 2, 3};
 
         auto vertexInput = interface->createVertexInput({
             {
@@ -72,6 +74,8 @@ int main() {
 
         auto vertexBuffer = interface->createVertexBuffer(sizeof(Vertex), vertices.size());
         vertexBuffer->upload(vertices);
+        auto indexBuffer = interface->createIndexBuffer(wen::IndexType::eUint16, indices.size());
+        indexBuffer->upload(indices);
 
         auto renderPipeline = interface->createGraphicsRenderPipeline(renderer, shaderProgram, "main subpass");
         renderPipeline->setVertexInput(vertexInput);
@@ -104,7 +108,9 @@ int main() {
             renderer->setViewport(0, h, w, -h);
             renderer->setScissor(0, 0, w, h);
             renderer->bindVertexBuffer(vertexBuffer);
-            renderer->draw(3, 1, 0, 0);
+            renderer->bindIndexBuffer(indexBuffer);
+            // renderer->draw(3, 1, 0, 0);
+            renderer->drawIndexed(indices.size(), 1, 0, 0, 0);
             renderer->endRender();
         }
         renderer->waitIdle();

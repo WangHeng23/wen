@@ -155,4 +155,20 @@ uint32_t convert<uint32_t>(VertexType type) {
     }
 }
 
+template <>
+vk::IndexType convert<vk::IndexType>(IndexType type) {
+    switch (type) {
+        case IndexType::eUint16: return vk::IndexType::eUint16;
+        case IndexType::eUint32: return vk::IndexType::eUint32;
+    }
+}
+
+template <>
+uint32_t convert<uint32_t>(IndexType type) {
+    switch (type) {
+        case IndexType::eUint16: return 2;
+        case IndexType::eUint32: return 4;
+    }
+}
+
 } // namespace wen

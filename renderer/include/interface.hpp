@@ -7,6 +7,7 @@
 #include "renderer.hpp"
 #include "resources/vertex_input.hpp"
 #include "storage/vertex_buffer.hpp"
+#include "storage/index_buffer.hpp"
 
 namespace wen {
 
@@ -21,6 +22,7 @@ public:
     std::shared_ptr<GraphicsRenderPipeline> createGraphicsRenderPipeline(std::weak_ptr<Renderer> renderer, std::shared_ptr<GraphicsShaderProgram> shaderProgram, const std::string& subpassName);
     std::shared_ptr<VertexInput> createVertexInput(const std::vector<VertexInputInfo>& infos);
     std::shared_ptr<VertexBuffer> createVertexBuffer(uint32_t size, uint32_t count, vk::BufferUsageFlags additionalUsage = {});
+    std::shared_ptr<IndexBuffer> createIndexBuffer(IndexType type, uint32_t count, vk::BufferUsageFlags additionalUsage = {});
 
 private:
     std::string path_;

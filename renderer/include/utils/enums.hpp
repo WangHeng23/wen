@@ -272,4 +272,9 @@ enum class VertexType {
     eDouble, eDouble2, eDouble3, eDouble4,
 };
 
+enum class IndexType {
+    eUint16,
+    eUint32,
+};
+
 } // namespace wen

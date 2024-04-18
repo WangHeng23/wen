@@ -47,4 +47,8 @@ std::shared_ptr<VertexBuffer> Interface::createVertexBuffer(uint32_t size, uint3
     return std::make_shared<VertexBuffer>(size, count, additionalUsage);
 }
 
+std::shared_ptr<IndexBuffer> Interface::createIndexBuffer(IndexType type, uint32_t count, vk::BufferUsageFlags additionalUsage) {
+    return std::make_shared<IndexBuffer>(type, count, additionalUsage);
+}
+
 } // namespace wen
