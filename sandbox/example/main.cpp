@@ -16,33 +16,33 @@ int main() {
     // 创建接口
     auto interface = context.createInterface("./sandbox/example/resources");
 
+    // 创建渲染流程
+    auto renderPass = interface->createRenderPass();
+    // 创建渲染流程后，会添加默认的交换链图像附件，不用像下面这样手动添加
+    // renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
+    
+    auto& subpass = renderPass->addSubpass("main subpass");
+    subpass.setOutputAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT);
+    
+    renderPass->addSubpassDependency(
+        wen::EXTERNAL_SUBPASS,
+        "main subpass",
+        {
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput
+        },
+        {
+            vk::AccessFlagBits::eNone,
+            vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
+        }
+    );
+    renderPass->build();
+
     {
-        // 创建渲染流程
-        auto renderPass = interface->createRenderPass();
-        // 创建渲染流程后，会添加默认的交换链图像附件，不用像下面这样手动添加
-        // renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
-        
-        auto& subpass = renderPass->addSubpass("main subpass");
-        subpass.setOutputAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT);
-        
-        renderPass->addSubpassDependency(
-            wen::EXTERNAL_SUBPASS,
-            "main subpass",
-            {
-                vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                vk::PipelineStageFlagBits::eColorAttachmentOutput
-            },
-            {
-                vk::AccessFlagBits::eNone,
-                vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
-            }
-        );
-        renderPass->build();
+        auto renderer = interface->createRenderer(std::move(renderPass));
 
-        auto renderer = interface->createRenderer(renderPass);
-
-        auto vertShader = interface->createShader("vert.spv");
-        auto fragShader = interface->createShader("frag.spv");
+        auto vertShader = interface->compileShader("shader.vert", wen::ShaderStage::eVertex);
+        auto fragShader = interface->compileShader("shader.frag", wen::ShaderStage::eFragment);
         auto shaderProgram = interface->createGraphicsShaderProgram();
         shaderProgram->setVertexShader(vertShader);
         shaderProgram->setFragmentShader(fragShader);

@@ -14,6 +14,7 @@ public:
     std::shared_ptr<RenderPass> createRenderPass();
     std::shared_ptr<Renderer> createRenderer(std::shared_ptr<RenderPass> renderPass);
     std::shared_ptr<Shader> createShader(const std::string& filename);
+    std::shared_ptr<Shader> compileShader(const std::string& filename, ShaderStage stage);
     std::shared_ptr<GraphicsShaderProgram> createGraphicsShaderProgram();
     std::shared_ptr<GraphicsRenderPipeline> createGraphicsRenderPipeline(std::weak_ptr<Renderer> renderer, std::shared_ptr<GraphicsShaderProgram> shaderProgram, const std::string& subpassName);
 

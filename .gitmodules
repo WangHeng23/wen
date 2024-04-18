@@ -7,3 +7,6 @@
 [submodule "3rdlibs/glm"]
 	path = 3rdlibs/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "3rdlibs/shaderc"]
+	path = 3rdlibs/shaderc
+	url = https://github.com/google/shaderc.git
