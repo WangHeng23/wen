@@ -45,4 +45,17 @@ std::vector<char> readFile(const std::string& name) {
     return buffer;
 }
 
+uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+    vk::PhysicalDeviceMemoryProperties memoryProperties = manager->device->physicalDevice.getMemoryProperties();
+
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    WEN_ERROR("Failed to find suitable memory type");
+    return 0;
+}
+
 } // namespace wen

@@ -254,4 +254,22 @@ struct FlagTraits<ShaderStage> {
     static VULKAN_HPP_CONST_OR_CONSTEXPR ShaderStages allFlags = ShaderStage::eVertex | ShaderStage::eFragment;
 };
 
+enum class InputRate {
+    eVertex,
+    eInstance,
+};
+
+enum class VertexType {
+    eInt8, eInt8x2, eInt8x3, eInt8x4,
+    eInt16, eInt16x2, eInt16x3, eInt16x4,
+    eInt32, eInt32x2, eInt32x3, eInt32x4,
+    eInt64, eInt64x2, eInt64x3, eInt64x4,
+    eUint8, eUint8x2, eUint8x3, eUint8x4,
+    eUint16, eUint16x2, eUint16x3, eUint16x4,
+    eUint32, eUint32x2, eUint32x3, eUint32x4,
+    eUint64, eUint64x2, eUint64x3, eUint64x4,
+    eFloat, eFloat2, eFloat3, eFloat4,
+    eDouble, eDouble2, eDouble3, eDouble4,
+};
+
 } // namespace wen

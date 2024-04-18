@@ -17,4 +17,7 @@ vk::ImageView createImageView(
 // read shader file
 std::vector<char> readFile(const std::string& name);
 
+// find memory type
+uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+
 } // namespace wen

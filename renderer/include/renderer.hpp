@@ -3,6 +3,7 @@
 #include "resources/render_pass.hpp"
 #include "resources/shader_program.hpp"
 #include "framebuffer.hpp"
+#include "storage/vertex_buffer.hpp"
 
 namespace wen {
 
@@ -31,6 +32,8 @@ public:
     }
     void bindPipeline(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline);
     void bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipeline);
+    void bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding = 0);
+    void bindVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffer, uint32_t binding = 0);
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
 
 public:

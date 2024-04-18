@@ -22,4 +22,28 @@ std::vector<vk::CommandBuffer> CommandPool::allocateCommandBuffers(uint32_t coun
     return std::move(manager->device->device.allocateCommandBuffers(allocateInfo));
 }
 
+vk::CommandBuffer CommandPool::allocateSingleUse() {
+    vk::CommandBufferAllocateInfo allocateInfo = {};
+    allocateInfo.setCommandPool(commandPool_)
+                .setLevel(vk::CommandBufferLevel::ePrimary)
+                .setCommandBufferCount(1);
+
+    auto cmdbuf = manager->device->device.allocateCommandBuffers(allocateInfo)[0];
+    vk::CommandBufferBeginInfo beginInfo = {};
+    beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    cmdbuf.begin(beginInfo);
+
+    return std::move(cmdbuf);
+}
+
+void CommandPool::freeSingleUse(vk::CommandBuffer cmdbuf) {
+    cmdbuf.end();
+
+    vk::SubmitInfo submits = {};
+    submits.setCommandBuffers(cmdbuf);
+    manager->device->transferQueue.submit(submits, nullptr);
+    manager->device->transferQueue.waitIdle();
+    manager->device->device.freeCommandBuffers(commandPool_, cmdbuf);
+}
+
 } // namespace wen

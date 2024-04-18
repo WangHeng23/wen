@@ -183,6 +183,20 @@ void Renderer::bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipel
     bindPipeline(renderPipeline);
 }
 
+void Renderer::bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding) {
+    std::vector<vk::Buffer> buffers;
+    std::vector<vk::DeviceSize> offsets;
+    for (const auto& vertexBuffer : vertexBuffers) {
+        buffers.push_back(vertexBuffer->getBuffer()->buffer);
+        offsets.push_back(0);
+    }
+    currentBuffer_.bindVertexBuffers(firstBinding, buffers, offsets);
+}
+
+void Renderer::bindVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffer, uint32_t binding) {
+    bindVertexBuffers({vertexBuffer}, binding);
+}
+
 void Renderer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
     currentBuffer_.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }

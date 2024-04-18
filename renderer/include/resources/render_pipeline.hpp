@@ -2,6 +2,7 @@
 
 #include "utils/enums.hpp"
 #include "resources/shader_program.hpp"
+#include "resources/vertex_input.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace wen {
@@ -41,12 +42,14 @@ public:
     GraphicsRenderPipeline(std::weak_ptr<Renderer> renderer, std::shared_ptr<GraphicsShaderProgram> shaderProgram, const std::string& subpassName);
     ~GraphicsRenderPipeline() override;
 
+    void setVertexInput(std::shared_ptr<VertexInput> vertexInput);
     void compile(const GraphicsRenderPipelineOptions& options = {}) override;
 
 private:
     std::weak_ptr<Renderer> renderer_;
     std::shared_ptr<GraphicsShaderProgram> shaderProgram_;
     std::string subpassName_;
+    std::shared_ptr<VertexInput> vertexInput_;
 };
 
 } // namespace wen

@@ -44,6 +44,11 @@ static vk::PipelineShaderStageCreateInfo createShaderStage(
     return info;
 }
 
+void GraphicsRenderPipeline::setVertexInput(std::shared_ptr<VertexInput> vertexInput) {
+    vertexInput_.reset();
+    vertexInput_ = std::move(vertexInput);
+}
+
 void GraphicsRenderPipeline::compile(const GraphicsRenderPipelineOptions& options) {
     // 0. shader
     std::vector<vk::PipelineShaderStageCreateInfo> stages = {
@@ -61,8 +66,10 @@ void GraphicsRenderPipeline::compile(const GraphicsRenderPipelineOptions& option
 
     // 1. vertex input
     vk::PipelineVertexInputStateCreateInfo vertexInput = {};
-    vertexInput.setVertexBindingDescriptions(nullptr)
-               .setVertexAttributeDescriptions(nullptr);
+    if (vertexInput_.get() != nullptr) {
+        vertexInput.setVertexBindingDescriptions(vertexInput_->bindingDescriptions_)
+                   .setVertexAttributeDescriptions(vertexInput_->attributeDescriptions_);
+    }
 
     // 2. input assembly
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly = {};

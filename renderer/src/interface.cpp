@@ -39,4 +39,12 @@ std::shared_ptr<GraphicsRenderPipeline> Interface::createGraphicsRenderPipeline(
     return std::make_shared<GraphicsRenderPipeline>(renderer, shaderProgram, subpassName);
 }
 
+std::shared_ptr<VertexInput> Interface::createVertexInput(const std::vector<VertexInputInfo>& infos) {
+    return std::make_shared<VertexInput>(infos);
+}
+
+std::shared_ptr<VertexBuffer> Interface::createVertexBuffer(uint32_t size, uint32_t count, vk::BufferUsageFlags additionalUsage) {
+    return std::make_shared<VertexBuffer>(size, count, additionalUsage);
+}
+
 } // namespace wen

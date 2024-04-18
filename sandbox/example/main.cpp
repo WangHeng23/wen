@@ -1,4 +1,5 @@
 #include <wen.hpp>
+#include <glm/glm.hpp>
 
 int main() {
     // 初始化引擎
@@ -47,7 +48,33 @@ int main() {
         shaderProgram->setVertexShader(vertShader);
         shaderProgram->setFragmentShader(fragShader);
 
+        struct Vertex {
+            glm::vec2 position;
+            glm::vec3 color;
+        };
+
+        const std::vector<Vertex> vertices = {
+            {{ 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}},
+            {{-0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{ 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
+        };
+
+        auto vertexInput = interface->createVertexInput({
+            {
+                .binding = 0,
+                .inputRate = wen::InputRate::eVertex,
+                .formats = {
+                    wen::VertexType::eFloat2, // position
+                    wen::VertexType::eFloat3  // color
+                }
+            }
+        });
+
+        auto vertexBuffer = interface->createVertexBuffer(sizeof(Vertex), vertices.size());
+        vertexBuffer->upload(vertices);
+
         auto renderPipeline = interface->createGraphicsRenderPipeline(renderer, shaderProgram, "main subpass");
+        renderPipeline->setVertexInput(vertexInput);
         renderPipeline->compile({
             .topology = wen::Topology::eTriangleList,
             .polygonMode = wen::PolygonMode::eFill,
@@ -76,6 +103,7 @@ int main() {
             renderer->bindResources(renderPipeline);
             renderer->setViewport(0, h, w, -h);
             renderer->setScissor(0, 0, w, h);
+            renderer->bindVertexBuffer(vertexBuffer);
             renderer->draw(3, 1, 0, 0);
             renderer->endRender();
         }
