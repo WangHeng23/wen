@@ -1,5 +1,7 @@
 #include <wen.hpp>
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
 int main() {
@@ -64,6 +66,13 @@ int main() {
             {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
             {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
         };
+
+        const std::vector<glm::vec3> offsets = {
+            { 0.7f,  0.7f, 1.0}, // 第一象限
+            {-0.7f,  0.7f, 2.0}, // 第二象限
+            { 0.7f, -0.7f, 2.0}, // 第四象限
+            {-0.7f, -0.7f, 3.0}  // 第三象限
+        };
         const std::vector<uint16_t> indices = {0, 1, 2, 1, 2, 3};
 
         auto vertexInput = interface->createVertexInput({
@@ -74,16 +83,37 @@ int main() {
                     wen::VertexType::eFloat2, // position
                     wen::VertexType::eFloat3  // color
                 }
+            },
+            {
+                .binding = 1,
+                .inputRate = wen::InputRate::eInstance,
+                .formats = {
+                    wen::VertexType::eFloat3  // offset
+                }
             }
         });
 
         auto vertexBuffer = interface->createVertexBuffer(sizeof(Vertex), vertices.size());
         vertexBuffer->upload(vertices);
+        auto offsetBuffer = interface->createVertexBuffer(sizeof(glm::vec3), offsets.size());
+        offsetBuffer->upload(offsets);
         auto indexBuffer = interface->createIndexBuffer(wen::IndexType::eUint16, indices.size());
         indexBuffer->upload(indices);
 
+        struct UniformBufferObject {
+            glm::mat4 model;
+            glm::mat4 view;
+            glm::mat4 proj;
+        };
+
+        auto descriptorSet = interface->createDescriptorSet();
+        descriptorSet->addDescriptors({
+            {0, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex}, // mvp
+        }).build();
+
         auto renderPipeline = interface->createGraphicsRenderPipeline(renderer, shaderProgram, "main subpass");
         renderPipeline->setVertexInput(vertexInput);
+        renderPipeline->setDescriptorSet(descriptorSet);
         renderPipeline->compile({
             .topology = wen::Topology::eTriangleList,
             .polygonMode = wen::PolygonMode::eFill,
@@ -91,6 +121,9 @@ int main() {
             .cullMode = wen::CullMode::eNone,
             .dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor}
         });
+
+        auto uniform = interface->createUniformBuffer(sizeof(UniformBufferObject));
+        descriptorSet->bindUniform(0, uniform);
 
         // 主循环
         while (!wen::shouldClose()) {
@@ -107,15 +140,20 @@ int main() {
             auto [width, height] = wen::settings->windowSize;
             auto w = static_cast<float>(width), h = static_cast<float>(height);
 
+            auto data = (UniformBufferObject*)uniform->getData();
+            data->model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+            data->view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            data->proj = glm::perspective(glm::radians(45.0f), w / h, 0.1f, 10.0f);
+
             renderer->beginRender();
             renderer->getBindPoint(shaderProgram);
             renderer->bindResources(renderPipeline);
             renderer->setViewport(0, h, w, -h);
             renderer->setScissor(0, 0, w, h);
-            renderer->bindVertexBuffer(vertexBuffer);
+            renderer->bindVertexBuffers({vertexBuffer, offsetBuffer});
             renderer->bindIndexBuffer(indexBuffer);
             // renderer->draw(3, 1, 0, 0);
-            renderer->drawIndexed(indices.size(), 1, 0, 0, 0);
+            renderer->drawIndexed(indices.size(), offsets.size(), 0, 0, 0);
 
             // ImGui
             imguiLayer->begin();

@@ -277,4 +277,8 @@ enum class IndexType {
     eUint32,
 };
 
+enum class DescriptorType {
+    eUniform,
+};
+
 } // namespace wen

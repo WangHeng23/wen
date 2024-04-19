@@ -171,4 +171,16 @@ uint32_t convert<uint32_t>(IndexType type) {
     }
 }
 
+template <>
+vk::DescriptorType convert<vk::DescriptorType>(DescriptorType type) {
+    switch (type) {
+        case DescriptorType::eUniform: return vk::DescriptorType::eUniformBuffer;
+    }
+}
+
+template <>
+vk::ShaderStageFlags convert<vk::ShaderStageFlags>(ShaderStages stages) {
+    return vk::ShaderStageFlags(static_cast<uint32_t>(stages));
+}
+
 } // namespace wen

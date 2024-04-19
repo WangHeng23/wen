@@ -55,4 +55,12 @@ std::shared_ptr<ImGuiLayer> Interface::createImGuiLayer(std::shared_ptr<Renderer
     return std::make_shared<ImGuiLayer>(renderer);
 }
 
+std::shared_ptr<DescriptorSet> Interface::createDescriptorSet() {
+    return std::make_shared<DescriptorSet>();
+}
+
+std::shared_ptr<UniformBuffer> Interface::createUniformBuffer(uint64_t size, bool inFlight) {
+    return std::make_shared<UniformBuffer>(size, inFlight);
+}
+
 } // namespace wen

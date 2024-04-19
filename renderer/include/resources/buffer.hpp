@@ -15,10 +15,10 @@ public:
 public:
     uint64_t size;
     vk::Buffer buffer;
+    void* data;
 
 private:
     bool mapped_;
-    void* data_;
     vk::DeviceMemory memory_;
 };
 

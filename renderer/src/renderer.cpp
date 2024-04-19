@@ -189,8 +189,19 @@ void Renderer::bindPipeline(const std::shared_ptr<GraphicsRenderPipeline>& rende
     currentBuffer_.bindPipeline(bindPoint_, renderPipeline->pipeline);
 }
 
+void Renderer::bindDescriptorSets(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline) {
+    if (!renderPipeline->descriptorSets.empty()) {
+        std::vector<vk::DescriptorSet> descriptorSets;
+        for (auto& descriptorSet : renderPipeline->descriptorSets) {
+            descriptorSets.push_back(descriptorSet.value()->descriptorSets_[currentInFlight_]);
+        }
+        currentBuffer_.bindDescriptorSets(bindPoint_, renderPipeline->pipelineLayout, 0, descriptorSets, {});
+    }
+}
+
 void Renderer::bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipeline) {
     bindPipeline(renderPipeline);
+    bindDescriptorSets(renderPipeline);
 }
 
 void Renderer::bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding) {

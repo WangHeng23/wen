@@ -2,6 +2,7 @@
 #include "utils/utils.hpp"
 #include "core/setting.hpp"
 #include "renderer.hpp"
+#include "core/logger.hpp"
 #include "manager.hpp"
 
 namespace wen {
@@ -9,7 +10,16 @@ namespace wen {
 void RenderPipeline::createPipelineLayout() {
     vk::PipelineLayoutCreateInfo info = {};
 
-    info.setSetLayouts(nullptr)
+    std::vector<vk::DescriptorSetLayout> layouts;
+    layouts.reserve(descriptorSets.size());
+    for (auto& set : descriptorSets) {
+        if (!set.has_value()) {
+            WEN_ERROR("Miss descriptor set at creating pipeline layout");
+        } 
+        layouts.push_back(set.value()->descriptorLayout_);
+    }
+
+    info.setSetLayouts(layouts)
         .setPushConstantRanges(nullptr);
 
     pipelineLayout = manager->device->device.createPipelineLayout(info);

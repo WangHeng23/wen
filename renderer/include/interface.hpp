@@ -9,6 +9,8 @@
 #include "storage/vertex_buffer.hpp"
 #include "storage/index_buffer.hpp"
 #include "imgui/imgui.hpp"
+#include "storage/descriptor_set.hpp"
+#include "storage/uniform_buffer.hpp"
 
 namespace wen {
 
@@ -25,6 +27,8 @@ public:
     std::shared_ptr<VertexBuffer> createVertexBuffer(uint32_t size, uint32_t count, vk::BufferUsageFlags additionalUsage = {});
     std::shared_ptr<IndexBuffer> createIndexBuffer(IndexType type, uint32_t count, vk::BufferUsageFlags additionalUsage = {});
     std::shared_ptr<ImGuiLayer> createImGuiLayer(std::shared_ptr<Renderer>& renderer);
+    std::shared_ptr<DescriptorSet> createDescriptorSet();
+    std::shared_ptr<UniformBuffer> createUniformBuffer(uint64_t size, bool inFlight = false);
 
 private:
     std::string path_;

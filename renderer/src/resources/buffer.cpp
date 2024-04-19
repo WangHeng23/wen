@@ -5,7 +5,7 @@
 namespace wen {
 
 Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
-    : size(size), mapped_(false), data_(nullptr) {
+    : size(size), mapped_(false), data(nullptr) {
     vk::BufferCreateInfo createInfo = {};
     createInfo.setSize(size)
               .setUsage(usage)
@@ -25,12 +25,12 @@ Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlag
 
 void* Buffer::map() {
     if (mapped_) {
-        return data_;
+        return data;
     }
     mapped_ = true;
     //! offset
-    data_ = manager->device->device.mapMemory(memory_, 0, size);
-    return data_;
+    data = manager->device->device.mapMemory(memory_, 0, size);
+    return data;
 }
 
 void Buffer::unmap() {
@@ -38,7 +38,7 @@ void Buffer::unmap() {
         return;
     }
     manager->device->device.unmapMemory(memory_);
-    data_ = nullptr;
+    data = nullptr;
     mapped_ = false;
 }
 

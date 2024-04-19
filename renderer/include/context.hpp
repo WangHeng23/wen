@@ -4,6 +4,7 @@
 #include "swapchain.hpp"
 #include "interface.hpp"
 #include "command_pool.hpp"
+#include "descriptor_pool.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace wen {
@@ -30,6 +31,7 @@ public:
     std::unique_ptr<Device> device;
     std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<CommandPool> commandPool;
+    std::unique_ptr<DescriptorPool> descriptorPool;
 
 private:
     void createVkInstance();
