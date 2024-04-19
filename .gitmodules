@@ -10,3 +10,6 @@
 [submodule "3rdlibs/shaderc"]
 	path = 3rdlibs/shaderc
 	url = https://github.com/google/shaderc.git
+[submodule "3rdlibs/imgui"]
+	path = 3rdlibs/imgui
+	url = https://github.com/ocornut/imgui.git

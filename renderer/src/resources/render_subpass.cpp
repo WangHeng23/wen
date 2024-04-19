@@ -4,7 +4,7 @@
 namespace wen {
 
 RenderSubpass::RenderSubpass(const std::string& name, RenderPass& renderPass)
-    : name_(name), renderPass_(renderPass){};
+    : name(name), renderPass_(renderPass){};
 
 vk::AttachmentReference RenderSubpass::createAttachmentReference(const std::string& name, vk::ImageLayout layout) {
     uint32_t attachment = renderPass_.getAttachmentIndex(name);

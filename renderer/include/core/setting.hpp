@@ -31,6 +31,11 @@ public:
 
     uint32_t maxFramesInFlight = 2;
     uint32_t currentInFlight = 0;
+
+    // ImGui
+    std::string defaultFont = "";
+    std::string chineseFont = "";
+    float fontSize = 18.0f;
 };
 
 extern std::shared_ptr<Settings> settings;

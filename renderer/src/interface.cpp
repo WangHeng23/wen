@@ -51,4 +51,8 @@ std::shared_ptr<IndexBuffer> Interface::createIndexBuffer(IndexType type, uint32
     return std::make_shared<IndexBuffer>(type, count, additionalUsage);
 }
 
+std::shared_ptr<ImGuiLayer> Interface::createImGuiLayer(std::shared_ptr<Renderer>& renderer) {
+    return std::make_shared<ImGuiLayer>(renderer);
+}
+
 } // namespace wen

@@ -77,6 +77,11 @@ void RenderPass::build() {
     renderPass = manager->device->device.createRenderPass(info);
 }
 
+void RenderPass::update() {
+    manager->device->device.destroyRenderPass(renderPass);
+    build();
+}
+
 uint32_t RenderPass::getAttachmentIndex(const std::string& name) const {
     auto index = attachmentIndices_.find(name);
     if (index == attachmentIndices_.end()) {

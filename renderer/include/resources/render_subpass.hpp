@@ -18,11 +18,11 @@ private:
     vk::AttachmentReference createAttachmentReference(const std::string& name, vk::ImageLayout layout);
 
 public:
+    std::string name;
     std::vector<vk::AttachmentReference> outputAttachments;
     std::vector<vk::PipelineColorBlendAttachmentState> outputColorBlendAttachments;
 
 private:
-    std::string name_;
     RenderPass& renderPass_;
 };
 

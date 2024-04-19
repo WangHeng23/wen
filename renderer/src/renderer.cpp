@@ -62,10 +62,19 @@ void Renderer::setScissor(int x, int y, uint32_t width, uint32_t height) {
     currentBuffer_.setScissor(0, {scissor});
 }
 
-void Renderer::reset() {
-    manager->recreateSwapchain();
+void Renderer::updateFramebuffers() {
     framebufferStore.reset();
     framebufferStore = std::make_unique<FramebufferStore>(*this);
+}
+
+void Renderer::updateSwapchain() {
+    manager->recreateSwapchain();
+    updateFramebuffers();
+}
+
+void Renderer::updateRenderPass() {
+    renderPass->update();
+    updateFramebuffers();
 }
 
 void Renderer::waitIdle() {
@@ -90,16 +99,17 @@ void Renderer::acquireNextImage() {
                 &index_
             ) == vk::Result::eErrorOutOfDateKHR
         ) {
-            reset();
+            updateSwapchain();
             return;
         }
     } catch (vk::OutOfDateKHRError) {
-        reset();
+        updateSwapchain();
         return;
     }
 
     device.resetFences(inFlightFences_[currentInFlight_]);
 
+    currentSubpass_ = 0;
     currentBuffer_.reset();
     vk::CommandBufferBeginInfo beginInfo = {};
     currentBuffer_.begin(beginInfo);
@@ -158,10 +168,10 @@ void Renderer::present() {
     try {
         auto res = manager->device->presentQueue.presentKHR(presentInfo);
         if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR) {
-            reset();
+            updateSwapchain();
         }
     } catch (vk::OutOfDateKHRError) {
-        reset();
+        updateSwapchain();
     }
 
     currentInFlight_ = (currentInFlight_ + 1) % settings->maxFramesInFlight;
@@ -207,6 +217,18 @@ void Renderer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t first
 
 void Renderer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
     currentBuffer_.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void Renderer::nextSubpass() {
+    currentBuffer_.nextSubpass(vk::SubpassContents::eInline);
+    currentSubpass_++;
+}
+
+void Renderer::toNextSubpass(const std::string& name) {
+    auto index = renderPass->getSubpassIndex(name);
+    while (currentSubpass_ != index) {
+        nextSubpass();
+    }
 }
 
 } // namespace wen

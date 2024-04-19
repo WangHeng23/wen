@@ -22,6 +22,7 @@ public:
     RenderSubpass& addSubpass(const std::string& name);
     void addSubpassDependency(const std::string& src, const std::string& dst, std::array<vk::PipelineStageFlags, 2> stage, std::array<vk::AccessFlags, 2> access);
     void build();
+    void update();
 
     uint32_t getAttachmentIndex(const std::string& name) const;
     uint32_t getSubpassIndex(const std::string& name) const;

@@ -1,5 +1,6 @@
 #include <wen.hpp>
 #include <glm/glm.hpp>
+#include <imgui.h>
 
 int main() {
     // 初始化引擎
@@ -10,6 +11,8 @@ int main() {
     wen::settings->debug = true;
     wen::settings->appName = "example";
     wen::settings->setVsync(true);
+    wen::settings->defaultFont = "./sandbox/resources/fonts/JetBrainsMonoNLNerdFontMono-Bold.ttf";
+    wen::settings->chineseFont = "./sandbox/resources/fonts/SourceHanSansCN-Normal.ttf";
 
     // 初始化渲染器
     auto& context = wen::initializeRenderer();
@@ -41,6 +44,8 @@ int main() {
 
     {
         auto renderer = interface->createRenderer(std::move(renderPass));
+
+        auto imguiLayer = interface->createImGuiLayer(renderer);
 
         auto vertShader = interface->compileShader("shader.vert", wen::ShaderStage::eVertex);
         auto fragShader = interface->compileShader("shader.frag", wen::ShaderStage::eFragment);
@@ -111,6 +116,14 @@ int main() {
             renderer->bindIndexBuffer(indexBuffer);
             // renderer->draw(3, 1, 0, 0);
             renderer->drawIndexed(indices.size(), 1, 0, 0, 0);
+
+            // ImGui
+            imguiLayer->begin();
+            ImGui::Text("中文字体");
+            ImGui::Text("(%.1f FPS)", ImGui::GetIO().Framerate);
+            ImGui::ShowDemoWindow();
+            imguiLayer->end();
+
             renderer->endRender();
         }
         renderer->waitIdle();
