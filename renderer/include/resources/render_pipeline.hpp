@@ -57,6 +57,7 @@ struct GraphicsRenderPipelineOptions {
     CullMode cullMode = CullMode::eBack;
     FrontFace frontFace = FrontFace::eClockwise;
     std::vector<vk::DynamicState> dynamicStates;
+    vk::Bool32 depthTestEnable = false;
 };
 class GraphicsRenderPipeline : public RenderPipelineTemplate<GraphicsRenderPipeline, GraphicsRenderPipelineOptions> {
 public:

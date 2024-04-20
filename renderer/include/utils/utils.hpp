@@ -28,4 +28,7 @@ struct TransitionInfo {
 void transitionImageLayout(vk::Image image, vk::ImageAspectFlagBits aspect, uint32_t mipLevels,
                            const TransitionInfo& src, const TransitionInfo& dst);
 
+vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+vk::Format findDepthFormat();
+
 } // namespace wen

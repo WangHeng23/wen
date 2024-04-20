@@ -26,9 +26,11 @@ int main() {
     auto renderPass = interface->createRenderPass();
     // 创建渲染流程后，会添加默认的交换链图像附件，不用像下面这样手动添加
     // renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
+    renderPass->addAttachment("depth buffer", wen::AttachmentType::eDepth);
     
     auto& subpass = renderPass->addSubpass("main subpass");
     subpass.setOutputAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT);
+    subpass.setDepthStencilAttachment("depth buffer");
     
     renderPass->addSubpassDependency(
         wen::EXTERNAL_SUBPASS,
@@ -56,20 +58,20 @@ int main() {
         shaderProgram->setFragmentShader(fragShader);
 
         struct Vertex {
-            glm::vec2 position;
+            glm::vec3 position;
             glm::vec3 color;
             glm::vec2 uv;
         };
 
         const std::vector<Vertex> vertices = {
-            {{ 0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-            {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-            {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+            {{ 0.5f,  0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+            {{ 0.5f, -0.5f, 0.2f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{-0.5f,  0.5f, 0.2f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, -0.5f, 0.3f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
         };
 
         const std::vector<glm::vec3> offsets = {
-            { 0.7f,  0.7f, 1.0}, // 第一象限
+            { 0.7f,  0.7f, 4.0}, // 第一象限
             {-0.7f,  0.7f, 2.0}, // 第二象限
             { 0.7f, -0.7f, 2.0}, // 第四象限
             {-0.7f, -0.7f, 3.0}  // 第三象限
@@ -81,7 +83,7 @@ int main() {
                 .binding = 0,
                 .inputRate = wen::InputRate::eVertex,
                 .formats = {
-                    wen::VertexType::eFloat2, // position
+                    wen::VertexType::eFloat3, // position
                     wen::VertexType::eFloat3, // color
                     wen::VertexType::eFloat2  // uv
                 }
@@ -126,11 +128,12 @@ int main() {
             .polygonMode = wen::PolygonMode::eFill,
             .lineWidth = 2.0f,
             .cullMode = wen::CullMode::eNone,
-            .dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor}
+            .dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
+            .depthTestEnable = true,
         });
 
         auto camera = std::make_unique<wen::Camera>();
-        camera->data.position = {0.0f, 0.0f, 2.0f};
+        camera->data.position = {0.0f, 0.0f, 6.0f};
         camera->direction = {0.0f, 0.0f, -1.0f};
         camera->upload();
         auto texture = interface->createTexture("texture.jpg", 4);

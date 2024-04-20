@@ -1,6 +1,7 @@
 #include "resources/render_pass.hpp"
 #include "core/setting.hpp"
 #include "core/logger.hpp"
+#include "utils/utils.hpp"
 #include "manager.hpp"
 
 namespace wen {
@@ -31,6 +32,16 @@ void RenderPass::addAttachment(const std::string& name, AttachmentType type) {
             attachment.clearColor = {{0.0f, 0.0f, 0.0f, 1.0f}};
             break;
         case AttachmentType::eDepth:
+            attachment.writeAttachment.format = findDepthFormat();
+            attachment.writeAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+            attachment.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+            attachment.aspect = vk::ImageAspectFlagBits::eDepth;
+            attachment.clearColor = {{1.0f, 0}};
+            if (attachment.writeAttachment.format == vk::Format::eD32SfloatS8Uint ||
+                attachment.writeAttachment.format == vk::Format::eD24UnormS8Uint) {
+                attachment.aspect |= vk::ImageAspectFlagBits::eStencil;
+            }
+            attachment.writeAttachment.stencilLoadOp = vk::AttachmentLoadOp::eClear;
             break;
     }
 }

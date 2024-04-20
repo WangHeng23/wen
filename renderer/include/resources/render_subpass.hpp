@@ -11,6 +11,7 @@ public:
     RenderSubpass(const std::string& name, RenderPass& renderPass);
 
     void setOutputAttachment(const std::string& name, vk::ImageLayout layout = vk::ImageLayout::eColorAttachmentOptimal);
+    void setDepthStencilAttachment(const std::string& name, vk::ImageLayout layout = vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     vk::SubpassDescription build();
 
@@ -19,11 +20,12 @@ private:
 
 public:
     std::string name;
-    std::vector<vk::AttachmentReference> outputAttachments;
     std::vector<vk::PipelineColorBlendAttachmentState> outputColorBlendAttachments;
 
 private:
     RenderPass& renderPass_;
+    std::vector<vk::AttachmentReference> outputAttachments_;
+    std::optional<vk::AttachmentReference> depthStencilAttachment_;
 };
 
 } // namespace wen

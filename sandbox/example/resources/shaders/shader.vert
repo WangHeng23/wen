@@ -1,6 +1,6 @@
 #version 450
 
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;
 layout(location = 2) in vec2 uv;
 layout(location = 3) in vec3 offset;
@@ -21,8 +21,8 @@ layout(push_constant) uniform PushConstants {
 } push;
 
 void main() {
-    vec4 pos = camera.project * camera.view * vec4(push.scaler * position, 0.0, 1.0);
-    gl_Position = vec4(pos + vec4(offset * 1.5, 1.0));
+    vec4 pos = camera.project * camera.view * vec4(push.scaler * position + offset, 1.0);
+    gl_Position = vec4(pos);
     fragColor = color;
     fragUV = (uv * 0.98 + 0.01) * (cos(push.time) + 1.8) / 1.8;
 }

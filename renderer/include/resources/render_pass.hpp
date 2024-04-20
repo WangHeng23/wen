@@ -27,6 +27,8 @@ public:
     uint32_t getAttachmentIndex(const std::string& name) const;
     uint32_t getSubpassIndex(const std::string& name) const;
 
+    auto getAttachmentIndices() const { return attachmentIndices_; }
+
 public:
     vk::RenderPass renderPass;
     std::vector<vk::AttachmentDescription> finalAttachments;

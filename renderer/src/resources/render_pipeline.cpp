@@ -125,6 +125,13 @@ void GraphicsRenderPipeline::compile(const GraphicsRenderPipelineOptions& option
 
     // 6. depth and stencil
     vk::PipelineDepthStencilStateCreateInfo depthStencil = {};
+    depthStencil.setDepthTestEnable(options.depthTestEnable)
+                .setDepthWriteEnable(true)
+                .setDepthCompareOp(vk::CompareOp::eLess)
+                .setDepthBoundsTestEnable(false)
+                .setStencilTestEnable(false)
+                .setFront({})
+                .setBack({});
 
     // 7. color blending
     vk::PipelineColorBlendStateCreateInfo colorBlend = {};
