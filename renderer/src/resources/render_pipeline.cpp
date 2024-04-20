@@ -19,8 +19,10 @@ void RenderPipeline::createPipelineLayout() {
         layouts.push_back(set.value()->descriptorLayout_);
     }
 
-    info.setSetLayouts(layouts)
-        .setPushConstantRanges(nullptr);
+    info.setSetLayouts(layouts);
+    if (pushConstants.has_value()) {
+        info.setPushConstantRanges(pushConstants.value()->range_);
+    }
 
     pipelineLayout = manager->device->device.createPipelineLayout(info);
 }
@@ -28,6 +30,8 @@ void RenderPipeline::createPipelineLayout() {
 RenderPipeline::~RenderPipeline() {
     manager->device->device.destroyPipeline(pipeline);
     manager->device->device.destroyPipelineLayout(pipelineLayout);
+    descriptorSets.clear();
+    pushConstants.reset();
 }
 
 GraphicsRenderPipeline::GraphicsRenderPipeline(std::weak_ptr<Renderer> renderer, std::shared_ptr<GraphicsShaderProgram> shaderProgram, const std::string& subpassName) {

@@ -4,6 +4,7 @@
 #include "resources/shader_program.hpp"
 #include "resources/vertex_input.hpp"
 #include "storage/descriptor_set.hpp"
+#include "storage/push_constants.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace wen {
@@ -20,6 +21,7 @@ public:
     vk::PipelineLayout pipelineLayout;
     vk::Pipeline pipeline;
     std::vector<std::optional<std::shared_ptr<DescriptorSet>>> descriptorSets;
+    std::optional<std::shared_ptr<PushConstants>> pushConstants;
 };
 
 template <class RenderPipelineClass, typename Options>
@@ -32,6 +34,15 @@ public:
             descriptorSets.resize(index + 1);
         }
         descriptorSets[index] = descriptorSet;
+        return *dynamic_cast<RenderPipelineClass*>(this);
+    }
+
+    RenderPipelineClass& setPushConstants(std::shared_ptr<PushConstants> pushConstants) {
+        if (this->pushConstants.has_value()) {
+            this->pushConstants.value().reset();
+            this->pushConstants.reset();
+        }
+        this->pushConstants = pushConstants;
         return *dynamic_cast<RenderPipelineClass*>(this);
     }
 

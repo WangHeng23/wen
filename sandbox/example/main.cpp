@@ -104,13 +104,23 @@ int main() {
 
         auto descriptorSet = interface->createDescriptorSet();
         descriptorSet->addDescriptors({
-            {0, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex}, // mvp
+            {0, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex}, // camera
             {1, wen::DescriptorType::eTexture, wen::ShaderStage::eFragment} // texture
         }).build();
+
+        auto pushConstans = interface->createPushConstants(
+            wen::ShaderStage::eVertex,
+            {
+                {"pad", wen::ConstantType::eFloat3}, // test
+                {"scaler", wen::ConstantType::eFloat},
+                {"time", wen::ConstantType::eFloat},
+            }
+        );
 
         auto renderPipeline = interface->createGraphicsRenderPipeline(renderer, shaderProgram, "main subpass");
         renderPipeline->setVertexInput(vertexInput);
         renderPipeline->setDescriptorSet(descriptorSet);
+        renderPipeline->setPushConstants(pushConstans);
         renderPipeline->compile({
             .topology = wen::Topology::eTriangleList,
             .polygonMode = wen::PolygonMode::eFill,
@@ -127,11 +137,11 @@ int main() {
         auto sampler = interface->createSampler({
             .magFilter = wen::SamplerFilter::eNearest,
             .minFilter = wen::SamplerFilter::eLinear,
-            .addressModeU = wen::SamplerAddressMode::eRepeat,
-            .addressModeV = wen::SamplerAddressMode::eRepeat,
+            .addressModeU = wen::SamplerAddressMode::eMirroredRepeat,
+            .addressModeV = wen::SamplerAddressMode::eClampToBorder,
             .addressModeW = wen::SamplerAddressMode::eRepeat,
             .maxAnisotropy = 16,
-            .borderColor = wen::SamplerBorderColor::eFloatOpaqueWhite,
+            .borderColor = wen::SamplerBorderColor::eFloatOpaqueBlack,
             .mipmapMode = wen::SamplerFilter::eLinear,
             .mipLevels = texture->getMipLevels()
         });
@@ -147,8 +157,11 @@ int main() {
             static auto start = std::chrono::high_resolution_clock::now();
             auto current = std::chrono::high_resolution_clock::now();
             auto time = std::chrono::duration<float, std::chrono::seconds::period>(current - start).count();
-            float scale = std::cos(time * 2.0f);
+            float scale = std::cos(time * 3.5f);
             float color = (scale + 2.0f) / 3.0f;
+
+            pushConstans->pushConstant("scaler", (scale + 3) / 3.0f);
+            pushConstans->pushConstant("time", time);
 
             renderer->setClearColor(wen::SWAPCHAIN_IMAGE_ATTACHMENT, {{(1 + color) / 2.0f, 1 - color, color, 1.0f}});
 

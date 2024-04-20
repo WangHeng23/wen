@@ -33,6 +33,7 @@ public:
     }
     void bindPipeline(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline);
     void bindDescriptorSets(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline);
+    void pushConstants(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline);
     void bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipeline);
     void bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding = 0);
     void bindVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffer, uint32_t binding = 0);

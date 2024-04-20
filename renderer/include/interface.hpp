@@ -13,6 +13,7 @@
 #include "storage/uniform_buffer.hpp"
 #include "storage/image_texture.hpp"
 #include "resources/sampler.hpp"
+#include "storage/push_constants.hpp"
 
 namespace wen {
 
@@ -34,6 +35,7 @@ public:
     std::shared_ptr<Texture> createTexture(const std::string& filename, uint32_t mipLevels = 0);
     std::shared_ptr<Texture> createTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t mipLevels = 0);
     std::shared_ptr<Sampler> createSampler(const SamplerInfos& infos);
+    std::shared_ptr<PushConstants> createPushConstants(ShaderStages stages, const std::vector<PushConstantInfo>& infos);
 
 private:
     std::string path_;

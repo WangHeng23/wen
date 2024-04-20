@@ -14,9 +14,15 @@ layout (binding = 0) uniform Camera {
     mat4 project;
 } camera;
 
+layout(push_constant) uniform PushConstants {
+    vec3 pad;
+    float scaler;
+    float time;
+} push;
+
 void main() {
-    vec4 pos = camera.project * camera.view * vec4(position, 0.0, 1.0);
+    vec4 pos = camera.project * camera.view * vec4(push.scaler * position, 0.0, 1.0);
     gl_Position = vec4(pos + vec4(offset * 1.5, 1.0));
     fragColor = color;
-    fragUV = uv;
+    fragUV = (uv * 0.98 + 0.01) * (cos(push.time) + 1.8) / 1.8;
 }

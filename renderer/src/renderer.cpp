@@ -199,9 +199,17 @@ void Renderer::bindDescriptorSets(const std::shared_ptr<GraphicsRenderPipeline>&
     }
 }
 
+void Renderer::pushConstants(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline) {
+    if (renderPipeline->pushConstants.has_value()) {
+        auto pushConstants = renderPipeline->pushConstants.value();
+        currentBuffer_.pushConstants(renderPipeline->pipelineLayout, pushConstants->range_.stageFlags, 0, pushConstants->size_, pushConstants->constants_.data());
+    }
+}
+
 void Renderer::bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipeline) {
     bindPipeline(renderPipeline);
     bindDescriptorSets(renderPipeline);
+    pushConstants(renderPipeline);
 }
 
 void Renderer::bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding) {
