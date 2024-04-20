@@ -8,14 +8,14 @@ layout(location = 3) in vec3 offset;
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragUV;
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
+layout (binding = 0) uniform Camera {
+    vec3 position;
     mat4 view;
-    mat4 proj;
-} ubo;
+    mat4 project;
+} camera;
 
 void main() {
-    vec4 pos = ubo.proj * ubo.view * ubo.model * vec4(position, 0.0, 1.0);
+    vec4 pos = camera.project * camera.view * vec4(position, 0.0, 1.0);
     gl_Position = vec4(pos + vec4(offset * 1.5, 1.0));
     fragColor = color;
     fragUV = uv;
