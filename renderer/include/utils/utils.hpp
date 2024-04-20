@@ -20,4 +20,12 @@ std::vector<char> readFile(const std::string& name);
 // find memory type
 uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
+struct TransitionInfo {
+    vk::ImageLayout layout;
+    vk::AccessFlags access;
+    vk::PipelineStageFlags stage;
+};
+void transitionImageLayout(vk::Image image, vk::ImageAspectFlagBits aspect, uint32_t mipLevels,
+                           const TransitionInfo& src, const TransitionInfo& dst);
+
 } // namespace wen

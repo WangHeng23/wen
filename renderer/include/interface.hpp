@@ -11,6 +11,8 @@
 #include "imgui/imgui.hpp"
 #include "storage/descriptor_set.hpp"
 #include "storage/uniform_buffer.hpp"
+#include "storage/image_texture.hpp"
+#include "resources/sampler.hpp"
 
 namespace wen {
 
@@ -29,10 +31,14 @@ public:
     std::shared_ptr<ImGuiLayer> createImGuiLayer(std::shared_ptr<Renderer>& renderer);
     std::shared_ptr<DescriptorSet> createDescriptorSet();
     std::shared_ptr<UniformBuffer> createUniformBuffer(uint64_t size, bool inFlight = false);
+    std::shared_ptr<Texture> createTexture(const std::string& filename, uint32_t mipLevels = 0);
+    std::shared_ptr<Texture> createTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t mipLevels = 0);
+    std::shared_ptr<Sampler> createSampler(const SamplerInfos& infos);
 
 private:
     std::string path_;
     std::string shaderDir_;
+    std::string textureDir_;
 };
 
 } // namespace wen

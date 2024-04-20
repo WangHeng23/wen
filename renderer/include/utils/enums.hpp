@@ -279,6 +279,28 @@ enum class IndexType {
 
 enum class DescriptorType {
     eUniform,
+    eTexture,
+};
+
+enum class SamplerFilter {
+    eNearest,
+    eLinear,
+};
+
+enum class SamplerAddressMode {
+    eRepeat,
+    eMirroredRepeat,
+    eClampToEdge,
+    eClampToBorder,
+};
+
+enum class SamplerBorderColor {
+    eFloatTransparentBlack,
+    eIntTransparentBlack,
+    eFloatOpaqueBlack,
+    eIntOpaqueBlack,
+    eFloatOpaqueWhite,
+    eIntOpaqueWhite,
 };
 
 } // namespace wen

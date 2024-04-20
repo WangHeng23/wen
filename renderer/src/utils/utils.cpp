@@ -58,4 +58,34 @@ uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
     return 0;
 }
 
+void transitionImageLayout(vk::Image image, vk::ImageAspectFlagBits aspect, uint32_t mipLevels,
+                           const TransitionInfo& src, const TransitionInfo& dst) {
+    vk::ImageMemoryBarrier barrier = {};
+    barrier.setOldLayout(src.layout)
+           .setSrcAccessMask(src.access)
+           .setNewLayout(dst.layout)
+           .setDstAccessMask(dst.access)
+           .setImage(image)
+           .setSubresourceRange({
+                aspect,
+                0,
+                mipLevels,
+                0,
+                1
+            })
+           .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
+           .setDstQueueFamilyIndex(vk::QueueFamilyIgnored);
+
+    auto cmdbuf = manager->commandPool->allocateSingleUse();
+    cmdbuf.pipelineBarrier(
+        src.stage,
+        dst.stage,
+        vk::DependencyFlagBits::eByRegion,
+        {},
+        {},
+        {barrier}
+    );
+    manager->commandPool->freeSingleUse(cmdbuf);
+}
+
 } // namespace wen

@@ -175,12 +175,51 @@ template <>
 vk::DescriptorType convert<vk::DescriptorType>(DescriptorType type) {
     switch (type) {
         case DescriptorType::eUniform: return vk::DescriptorType::eUniformBuffer;
+        case DescriptorType::eTexture: return vk::DescriptorType::eCombinedImageSampler;
     }
 }
 
 template <>
 vk::ShaderStageFlags convert<vk::ShaderStageFlags>(ShaderStages stages) {
     return vk::ShaderStageFlags(static_cast<uint32_t>(stages));
+}
+
+template <>
+vk::Filter convert<vk::Filter>(SamplerFilter filter) {
+    switch (filter) {
+        case SamplerFilter::eNearest: return vk::Filter::eNearest;
+        case SamplerFilter::eLinear: return vk::Filter::eLinear;
+    }
+}
+
+template <>
+vk::SamplerMipmapMode convert<vk::SamplerMipmapMode>(SamplerFilter filter) {
+    switch (filter) {
+        case SamplerFilter::eNearest: return vk::SamplerMipmapMode::eNearest;
+        case SamplerFilter::eLinear: return vk::SamplerMipmapMode::eLinear;
+    }
+}
+
+template <>
+vk::SamplerAddressMode convert<vk::SamplerAddressMode>(SamplerAddressMode mode) {
+    switch (mode) {
+        case SamplerAddressMode::eRepeat: return vk::SamplerAddressMode::eRepeat;
+        case SamplerAddressMode::eMirroredRepeat: return vk::SamplerAddressMode::eMirroredRepeat;
+        case SamplerAddressMode::eClampToEdge: return vk::SamplerAddressMode::eClampToEdge;
+        case SamplerAddressMode::eClampToBorder: return vk::SamplerAddressMode::eClampToBorder;
+    }
+}
+
+template <>
+vk::BorderColor convert<vk::BorderColor>(SamplerBorderColor color) {
+    switch (color) {
+        case SamplerBorderColor::eFloatTransparentBlack: return vk::BorderColor::eFloatTransparentBlack;
+        case SamplerBorderColor::eIntTransparentBlack: return vk::BorderColor::eIntTransparentBlack;
+        case SamplerBorderColor::eFloatOpaqueBlack: return vk::BorderColor::eFloatOpaqueBlack;
+        case SamplerBorderColor::eIntOpaqueBlack: return vk::BorderColor::eIntOpaqueBlack;
+        case SamplerBorderColor::eFloatOpaqueWhite: return vk::BorderColor::eFloatOpaqueWhite;
+        case SamplerBorderColor::eIntOpaqueWhite: return vk::BorderColor::eIntOpaqueWhite;
+    }
 }
 
 } // namespace wen

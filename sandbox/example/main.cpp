@@ -58,13 +58,14 @@ int main() {
         struct Vertex {
             glm::vec2 position;
             glm::vec3 color;
+            glm::vec2 uv;
         };
 
         const std::vector<Vertex> vertices = {
-            {{ 0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
-            {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
+            {{ 0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+            {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
         };
 
         const std::vector<glm::vec3> offsets = {
@@ -81,7 +82,8 @@ int main() {
                 .inputRate = wen::InputRate::eVertex,
                 .formats = {
                     wen::VertexType::eFloat2, // position
-                    wen::VertexType::eFloat3  // color
+                    wen::VertexType::eFloat3, // color
+                    wen::VertexType::eFloat2  // uv
                 }
             },
             {
@@ -109,6 +111,7 @@ int main() {
         auto descriptorSet = interface->createDescriptorSet();
         descriptorSet->addDescriptors({
             {0, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex}, // mvp
+            {1, wen::DescriptorType::eTexture, wen::ShaderStage::eFragment} // texture
         }).build();
 
         auto renderPipeline = interface->createGraphicsRenderPipeline(renderer, shaderProgram, "main subpass");
@@ -123,7 +126,20 @@ int main() {
         });
 
         auto uniform = interface->createUniformBuffer(sizeof(UniformBufferObject));
+        auto texture = interface->createTexture("texture.jpg", 4);
+        auto sampler = interface->createSampler({
+            .magFilter = wen::SamplerFilter::eNearest,
+            .minFilter = wen::SamplerFilter::eLinear,
+            .addressModeU = wen::SamplerAddressMode::eRepeat,
+            .addressModeV = wen::SamplerAddressMode::eRepeat,
+            .addressModeW = wen::SamplerAddressMode::eRepeat,
+            .maxAnisotropy = 16,
+            .borderColor = wen::SamplerBorderColor::eFloatOpaqueWhite,
+            .mipmapMode = wen::SamplerFilter::eLinear,
+            .mipLevels = texture->getMipLevels()
+        });
         descriptorSet->bindUniform(0, uniform);
+        descriptorSet->bindTexture(1, texture, sampler);
 
         // 主循环
         while (!wen::shouldClose()) {
@@ -159,7 +175,7 @@ int main() {
             imguiLayer->begin();
             ImGui::Text("中文字体");
             ImGui::Text("(%.1f FPS)", ImGui::GetIO().Framerate);
-            ImGui::ShowDemoWindow();
+            // ImGui::ShowDemoWindow();
             imguiLayer->end();
 
             renderer->endRender();

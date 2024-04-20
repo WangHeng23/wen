@@ -6,6 +6,7 @@ namespace wen {
 
 Interface::Interface(const std::string& path) : path_(path) {
     shaderDir_ = path_ + "/shaders/";
+    textureDir_ = path_ + "/textures/";
 }
 
 std::shared_ptr<RenderPass> Interface::createRenderPass() {
@@ -61,6 +62,25 @@ std::shared_ptr<DescriptorSet> Interface::createDescriptorSet() {
 
 std::shared_ptr<UniformBuffer> Interface::createUniformBuffer(uint64_t size, bool inFlight) {
     return std::make_shared<UniformBuffer>(size, inFlight);
+}
+
+std::shared_ptr<Texture> Interface::createTexture(const std::string& filename, uint32_t mipLevels) {
+    auto pos = filename.find_last_of('.') + 1;
+    auto filetype = filename.substr(pos, filename.size() - pos);
+    std::string filepath = textureDir_ + filename;
+    if (filetype == "png" || filetype == "jpg") {
+        return std::make_shared<ImageTexture>(filepath, mipLevels);
+    }
+    WEN_ERROR("Unsupported texture file type: {}", filetype)
+    return nullptr;
+}
+
+std::shared_ptr<Texture> Interface::createTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t mipLevels) {
+    return std::make_shared<DataTexture>(data, width, height, mipLevels);
+}
+
+std::shared_ptr<Sampler> Interface::createSampler(const SamplerInfos& infos) {
+    return std::make_shared<Sampler>(infos);
 }
 
 } // namespace wen

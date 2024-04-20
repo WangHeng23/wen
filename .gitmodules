@@ -13,3 +13,6 @@
 [submodule "3rdlibs/imgui"]
 	path = 3rdlibs/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "3rdlibs/stb"]
+	path = 3rdlibs/stb
+	url = https://github.com/nothings/stb
