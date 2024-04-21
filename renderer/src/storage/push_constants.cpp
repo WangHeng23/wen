@@ -36,8 +36,4 @@ void PushConstants::pushConstant(const std::string& name, const void* data) {
     memcpy(constants_.data() + offsets_.at(name), data, sizes_.at(name));
 }
 
-void PushConstants::pushConstant(const std::string& name, BasicValue value) {
-    pushConstant(name, &value);
-}
-
 } // namespace wen

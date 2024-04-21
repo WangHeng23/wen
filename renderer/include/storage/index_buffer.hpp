@@ -16,11 +16,12 @@ public:
     void unmap();
 
     template <class Type>
-    void upload(const std::vector<Type>& data) {
+    uint32_t upload(const std::vector<Type>& data, uint32_t offset = 0) {
         auto* ptr = static_cast<uint8_t*>(staging_->map()); 
-        memcpy(ptr, data.data(), data.size() * sizeof(Type));
+        memcpy(ptr + (offset * sizeof(Type)), data.data(), data.size() * sizeof(Type));
         flush();
         staging_->unmap();
+        return offset + data.size();
     }
 
     std::unique_ptr<Buffer>& getBuffer() { return buffer_; }

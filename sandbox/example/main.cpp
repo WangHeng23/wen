@@ -160,11 +160,11 @@ int main() {
             static auto start = std::chrono::high_resolution_clock::now();
             auto current = std::chrono::high_resolution_clock::now();
             auto time = std::chrono::duration<float, std::chrono::seconds::period>(current - start).count();
-            float scale = std::cos(time * 3.5f);
+            float scale = std::cos(time * 2.5f);
             float color = (scale + 2.0f) / 3.0f;
 
-            pushConstans->pushConstant("scaler", (scale + 3) / 3.0f);
-            pushConstans->pushConstant("time", time);
+            pushConstans->pushConstant("scaler", &scale);
+            pushConstans->pushConstant("time", &time);
 
             renderer->setClearColor(wen::SWAPCHAIN_IMAGE_ATTACHMENT, {{(1 + color) / 2.0f, 1 - color, color, 1.0f}});
 

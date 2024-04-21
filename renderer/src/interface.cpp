@@ -7,6 +7,7 @@ namespace wen {
 Interface::Interface(const std::string& path) : path_(path) {
     shaderDir_ = path_ + "/shaders/";
     textureDir_ = path_ + "/textures/";
+    modelDir_ = path_ + "/models/";
 }
 
 std::shared_ptr<RenderPass> Interface::createRenderPass() {
@@ -85,6 +86,10 @@ std::shared_ptr<Sampler> Interface::createSampler(const SamplerInfos& infos) {
 
 std::shared_ptr<PushConstants> Interface::createPushConstants(ShaderStages stages, const std::vector<PushConstantInfo>& infos) {
     return std::make_shared<PushConstants>(stages, infos);
+}
+
+std::shared_ptr<Model> Interface::loadModel(const std::string& filename) {
+    return std::make_shared<Model>(modelDir_ + filename);
 }
 
 } // namespace wen

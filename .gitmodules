@@ -16,3 +16,6 @@
 [submodule "3rdlibs/stb"]
 	path = 3rdlibs/stb
 	url = https://github.com/nothings/stb
+[submodule "3rdlibs/tinyobjloader"]
+	path = 3rdlibs/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git

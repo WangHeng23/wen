@@ -238,6 +238,10 @@ void Renderer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t
     currentBuffer_.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
+void Renderer::drawModel(const std::shared_ptr<Model>& model, uint32_t instanceCount, uint32_t firstInstance) {
+    currentBuffer_.drawIndexed(model->indexCount, instanceCount, model->offset().index, model->offset().vertex, firstInstance);
+}
+
 void Renderer::nextSubpass() {
     currentBuffer_.nextSubpass(vk::SubpassContents::eInline);
     currentSubpass_++;

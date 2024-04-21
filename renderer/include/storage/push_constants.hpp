@@ -10,17 +10,6 @@ struct PushConstantInfo {
     ConstantType type;
 };
 
-union BasicValue {
-    bool b;
-    BasicValue(bool b) : b(b) {}
-    int i;
-    BasicValue(int i) : i(i) {}
-    uint32_t u;
-    BasicValue(uint32_t u) : u(u) {}
-    float f;
-    BasicValue(float f) : f(f) {}
-};
-
 class PushConstants final {
     friend class RenderPipeline;
     friend class Renderer;
@@ -30,7 +19,6 @@ public:
     ~PushConstants();
 
     void pushConstant(const std::string& name, const void* data);
-    void pushConstant(const std::string& name, BasicValue value);
 
 private:
     uint32_t size_;
