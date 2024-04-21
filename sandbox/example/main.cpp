@@ -19,13 +19,17 @@ int main() {
     // 初始化渲染器
     auto& context = wen::initializeRenderer();
 
+    // 初始化渲染器后，才进行设置采样数
+    wen::settings->setSampleCount(wen::SampleCount::e64);
+
     // 创建接口
     auto interface = context.createInterface("./sandbox/example/resources");
 
     // 创建渲染流程
     auto renderPass = interface->createRenderPass();
     // 创建渲染流程后，会添加默认的交换链图像附件，不用像下面这样手动添加
-    // renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
+    // 这里修改了代码，需要手动添加
+    renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
     renderPass->addAttachment("depth buffer", wen::AttachmentType::eDepth);
     
     auto& subpass = renderPass->addSubpass("main subpass");

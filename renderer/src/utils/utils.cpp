@@ -108,4 +108,16 @@ vk::Format findDepthFormat() {
     );
 }
 
+SampleCount getMaxUsableSampleCount() {
+    auto properties = manager->device->physicalDevice.getProperties();
+    vk::SampleCountFlags counts = properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
+    if (counts & vk::SampleCountFlagBits::e64) { return SampleCount::e64; }
+    if (counts & vk::SampleCountFlagBits::e32) { return SampleCount::e32; }
+    if (counts & vk::SampleCountFlagBits::e16) { return SampleCount::e16; }
+    if (counts & vk::SampleCountFlagBits::e8) { return SampleCount::e8; }
+    if (counts & vk::SampleCountFlagBits::e4) { return SampleCount::e4; }
+    if (counts & vk::SampleCountFlagBits::e2) { return SampleCount::e2; }
+    return SampleCount::e1;
+}
+
 } // namespace wen

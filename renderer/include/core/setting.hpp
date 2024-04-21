@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/window.hpp"
+#include "utils/enums.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace wen {
@@ -15,6 +16,8 @@ public:
 
     void setWindowSize(uint32_t width, uint32_t height);
     void setVsync(bool vsync);
+    void setSampleCount(SampleCount count);
+    bool msaa() const { return msaaSamples != SampleCount::e1; }
 
     Window::Info windowInfo;
     bool debug = false;
@@ -36,6 +39,9 @@ public:
     std::string defaultFont = "";
     std::string chineseFont = "";
     float fontSize = 18.0f;
+
+    // msaa
+    SampleCount msaaSamples = SampleCount::e1;
 };
 
 extern std::shared_ptr<Settings> settings;

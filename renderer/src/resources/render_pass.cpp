@@ -6,17 +6,11 @@
 
 namespace wen {
 
-RenderPass::RenderPass() {
-    addAttachment(SWAPCHAIN_IMAGE_ATTACHMENT, AttachmentType::eColor);
-    auto& attachment = attachments[0];
-    attachment.writeAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-}
-
 void RenderPass::addAttachment(const std::string& name, AttachmentType type) {
     attachmentIndices_.insert(std::make_pair(name, attachments.size())); 
     auto& attachment = attachments.emplace_back();
     attachment.writeAttachment
-        .setSamples(vk::SampleCountFlagBits::e1)
+        .setSamples(convert<vk::SampleCountFlagBits>(settings->msaaSamples))
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
@@ -30,6 +24,14 @@ void RenderPass::addAttachment(const std::string& name, AttachmentType type) {
             attachment.usage = vk::ImageUsageFlagBits::eColorAttachment;
             attachment.aspect = vk::ImageAspectFlagBits::eColor;
             attachment.clearColor = {{0.0f, 0.0f, 0.0f, 1.0f}};
+            if (settings->msaa()) {
+                attachment.readAttachment = attachment.writeAttachment;
+                attachment.readAttachment->samples = vk::SampleCountFlagBits::e1;
+                attachment.readAttachment->loadOp = vk::AttachmentLoadOp::eDontCare;
+                attachment.read_usage = vk::ImageUsageFlagBits::eColorAttachment;
+                attachment.read_offset = readAttachments.size();
+                readAttachments.push_back(attachment);
+            }
             break;
         case AttachmentType::eDepth:
             attachment.writeAttachment.format = findDepthFormat();
@@ -43,6 +45,17 @@ void RenderPass::addAttachment(const std::string& name, AttachmentType type) {
             }
             attachment.writeAttachment.stencilLoadOp = vk::AttachmentLoadOp::eClear;
             break;
+    }
+
+    static bool first = true;
+    if (first) {
+        auto& attachment = attachments[0];
+        if (attachment.readAttachment.has_value()) {
+            readAttachments[0].readAttachment->finalLayout = vk::ImageLayout::ePresentSrcKHR;
+        } else {
+            attachment.writeAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+        }
+        first = false;
     }
 }
 
@@ -67,9 +80,14 @@ void RenderPass::build() {
     vk::RenderPassCreateInfo info = {};
 
     finalAttachments.clear();
-    finalAttachments.reserve(attachments.size());
+    finalAttachments.reserve(attachments.size() + readAttachments.size());
     for (const auto& attachment : attachments) {
         finalAttachments.push_back(attachment.writeAttachment);
+    }
+    if (settings->msaa()) {
+        for (const auto& attachment : readAttachments) {
+            finalAttachments.push_back(attachment.readAttachment.value());
+        }
     }
 
     finalSubpasses.clear();
@@ -93,12 +111,17 @@ void RenderPass::update() {
     build();
 }
 
-uint32_t RenderPass::getAttachmentIndex(const std::string& name) const {
+uint32_t RenderPass::getAttachmentIndex(const std::string& name, bool read) const {
     auto index = attachmentIndices_.find(name);
     if (index == attachmentIndices_.end()) {
         WEN_ERROR("Attachment \"{}\" not found", name)
         return -1u;
     }
+
+    if (read && attachments[index->second].readAttachment.has_value()) {
+        return attachments[index->second].read_offset + attachments.size();
+    }
+
     return index->second;
 }
 

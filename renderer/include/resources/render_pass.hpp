@@ -9,13 +9,16 @@ namespace wen {
 struct AttachmentInfo {
     vk::AttachmentDescription writeAttachment = {};
     vk::ImageUsageFlags usage = {};
+    std::optional<vk::AttachmentDescription> readAttachment = {};
+    vk::ImageUsageFlags read_usage = {};
+    uint32_t read_offset = 0;
     vk::ImageAspectFlags aspect = {};
     vk::ClearValue clearColor = {};
 };
 
 class RenderPass final {
 public:
-    RenderPass();
+    RenderPass() = default;
     ~RenderPass();
 
     void addAttachment(const std::string& name, AttachmentType type);
@@ -24,7 +27,7 @@ public:
     void build();
     void update();
 
-    uint32_t getAttachmentIndex(const std::string& name) const;
+    uint32_t getAttachmentIndex(const std::string& name, bool read) const;
     uint32_t getSubpassIndex(const std::string& name) const;
 
     auto getAttachmentIndices() const { return attachmentIndices_; }
@@ -37,6 +40,8 @@ public:
 
     std::vector<AttachmentInfo> attachments;
     std::vector<std::unique_ptr<RenderSubpass>> subpasses;
+
+    std::vector<AttachmentInfo> readAttachments;
 
 private:
     std::map<std::string, uint32_t> attachmentIndices_;

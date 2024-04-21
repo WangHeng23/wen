@@ -44,7 +44,7 @@ Renderer::~Renderer() {
 }
 
 void Renderer::setClearColor(const std::string& name, const vk::ClearValue& value) {
-    uint32_t index = renderPass->getAttachmentIndex(name);
+    uint32_t index = renderPass->getAttachmentIndex(name, false);
     renderPass->attachments[index].clearColor = value;
 }
 

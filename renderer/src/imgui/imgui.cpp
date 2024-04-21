@@ -97,7 +97,7 @@ ImGuiLayer::ImGuiLayer(std::shared_ptr<Renderer>& renderer) : renderer_(renderer
     initInfo.Subpass = renderer->renderPass->subpasses.size() - 1;
     initInfo.MinImageCount = manager->swapchain->imageCount;
     initInfo.ImageCount = manager->swapchain->imageCount;
-    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    initInfo.MSAASamples = static_cast<VkSampleCountFlagBits>(settings->msaaSamples);
     initInfo.Allocator = nullptr;
     initInfo.CheckVkResultFn = [](VkResult result) {
         if (result != VK_SUCCESS) {

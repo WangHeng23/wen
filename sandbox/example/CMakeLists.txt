@@ -1,6 +1,6 @@
 project(example)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS model.cpp)
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS main.cpp)
 
 add_executable(${PROJECT_NAME} ${SRC})
 

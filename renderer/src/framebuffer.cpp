@@ -56,17 +56,49 @@ FramebufferStore::FramebufferStore(const Renderer& renderer) {
     uint32_t count = renderer.renderPass->finalAttachments.size();
     std::vector<vk::ImageView> imageViews(count);
     attachments_.resize(count);
+    int index = 0;
+
+    auto attachment = renderer.renderPass->attachments[0];
+    if (attachment.readAttachment.has_value()) {
+        attachments_[0] = std::move(
+            Attachment(
+                attachment.writeAttachment,
+                attachment.usage,
+                attachment.aspect
+            )
+        );
+        index = renderer.renderPass->attachments.size();
+    } else {
+        index = 0;
+    }
 
     for (auto& [name, idx] : renderer.renderPass->getAttachmentIndices()) {
         auto& attachment = renderer.renderPass->attachments[idx];
-        attachments_[idx] = std::move(Attachment(attachment.writeAttachment, attachment.usage, attachment.aspect));
+        if (idx != 0) {
+            attachments_[idx] = std::move(
+                Attachment(
+                    attachment.writeAttachment,
+                    attachment.usage,
+                    attachment.aspect
+                )
+            );
+            if (attachment.readAttachment.has_value()) {
+                attachments_[renderer.renderPass->getAttachmentIndex(name, true)] = std::move(
+                    Attachment(
+                        attachment.readAttachment.value(),
+                        attachment.read_usage,
+                        attachment.aspect
+                    )
+                );
+            }
+        }
     }
 
     for (uint32_t i = 0; i < count; i++) {
         imageViews[i] = attachments_[i].imageView;
     }
     for (auto imageView : manager->swapchain->imageViews) {
-        imageViews[0] = imageView;
+        imageViews[index] = imageView;
         framebuffers_.push_back(std::make_unique<Framebuffer>(renderer, imageViews));
     }
 }

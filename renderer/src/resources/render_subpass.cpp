@@ -1,13 +1,14 @@
 #include "resources/render_subpass.hpp"
 #include "resources/render_pass.hpp"
+#include "core/setting.hpp"
 
 namespace wen {
 
 RenderSubpass::RenderSubpass(const std::string& name, RenderPass& renderPass)
     : name(name), renderPass_(renderPass){};
 
-vk::AttachmentReference RenderSubpass::createAttachmentReference(const std::string& name, vk::ImageLayout layout) {
-    uint32_t attachment = renderPass_.getAttachmentIndex(name);
+vk::AttachmentReference RenderSubpass::createAttachmentReference(const std::string& name, vk::ImageLayout layout, bool read) {
+    uint32_t attachment = renderPass_.getAttachmentIndex(name, read);
     vk::AttachmentReference reference = {};
     reference.setAttachment(attachment)
              .setLayout(layout);
@@ -15,7 +16,7 @@ vk::AttachmentReference RenderSubpass::createAttachmentReference(const std::stri
 }
 
 void RenderSubpass::setOutputAttachment(const std::string& name, vk::ImageLayout layout) {
-    outputAttachments_.push_back(createAttachmentReference(name, layout));
+    outputAttachments_.push_back(createAttachmentReference(name, layout, false));
     outputColorBlendAttachments.push_back({
         false,
         vk::BlendFactor::eZero,
@@ -27,10 +28,11 @@ void RenderSubpass::setOutputAttachment(const std::string& name, vk::ImageLayout
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
             vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
     });
+    resolveAttachments_.push_back(createAttachmentReference(name, layout, true));
 }
 
 void RenderSubpass::setDepthStencilAttachment(const std::string& name, vk::ImageLayout layout) {
-    depthStencilAttachment_ = createAttachmentReference(name, layout); 
+    depthStencilAttachment_ = createAttachmentReference(name, layout, false); 
 }
 
 vk::SubpassDescription RenderSubpass::build() {
@@ -42,6 +44,10 @@ vk::SubpassDescription RenderSubpass::build() {
 
     if (depthStencilAttachment_.has_value()) {
         subpass.setPDepthStencilAttachment(&depthStencilAttachment_.value());
+    }
+
+    if (settings->msaa()) {
+        subpass.setResolveAttachments(resolveAttachments_);
     }
 
     return std::move(subpass);

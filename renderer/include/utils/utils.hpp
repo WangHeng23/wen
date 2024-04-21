@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/enums.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace wen {
@@ -30,5 +31,7 @@ void transitionImageLayout(vk::Image image, vk::ImageAspectFlagBits aspect, uint
 
 vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 vk::Format findDepthFormat();
+
+SampleCount getMaxUsableSampleCount();
 
 } // namespace wen

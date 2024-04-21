@@ -16,7 +16,7 @@ public:
     vk::SubpassDescription build();
 
 private:
-    vk::AttachmentReference createAttachmentReference(const std::string& name, vk::ImageLayout layout);
+    vk::AttachmentReference createAttachmentReference(const std::string& name, vk::ImageLayout layout, bool read);
 
 public:
     std::string name;
@@ -26,6 +26,7 @@ private:
     RenderPass& renderPass_;
     std::vector<vk::AttachmentReference> outputAttachments_;
     std::optional<vk::AttachmentReference> depthStencilAttachment_;
+    std::vector<vk::AttachmentReference> resolveAttachments_;
 };
 
 } // namespace wen

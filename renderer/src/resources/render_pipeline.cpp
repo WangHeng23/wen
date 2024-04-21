@@ -117,7 +117,7 @@ void GraphicsRenderPipeline::compile(const GraphicsRenderPipelineOptions& option
     // 5. multisample
     vk::PipelineMultisampleStateCreateInfo multisample = {};
     multisample.setSampleShadingEnable(true)
-               .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+               .setRasterizationSamples(convert<vk::SampleCountFlagBits>(settings->msaaSamples))
                .setMinSampleShading(0.2f)
                .setPSampleMask(nullptr)
                .setAlphaToCoverageEnable(false)

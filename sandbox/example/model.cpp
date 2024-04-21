@@ -17,9 +17,12 @@ int main() {
 
     auto& context = wen::initializeRenderer();
 
+    wen::settings->setSampleCount(wen::SampleCount::e64);
+
     auto interface = context.createInterface("./sandbox/example/resources");
 
     auto renderPass = interface->createRenderPass();
+    renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
     renderPass->addAttachment("depth buffer", wen::AttachmentType::eDepth);
     
     auto& subpass = renderPass->addSubpass("main subpass");

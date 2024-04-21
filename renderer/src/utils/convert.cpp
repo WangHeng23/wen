@@ -222,4 +222,17 @@ vk::BorderColor convert<vk::BorderColor>(SamplerBorderColor color) {
     }
 }
 
+template <>
+vk::SampleCountFlagBits convert<vk::SampleCountFlagBits>(SampleCount count) {
+    switch (count) {
+        case SampleCount::e1: return vk::SampleCountFlagBits::e1;
+        case SampleCount::e2: return vk::SampleCountFlagBits::e2;
+        case SampleCount::e4: return vk::SampleCountFlagBits::e4;
+        case SampleCount::e8: return vk::SampleCountFlagBits::e8;
+        case SampleCount::e16: return vk::SampleCountFlagBits::e16;
+        case SampleCount::e32: return vk::SampleCountFlagBits::e32;
+        case SampleCount::e64: return vk::SampleCountFlagBits::e64;
+    }
+}
+
 } // namespace wen
