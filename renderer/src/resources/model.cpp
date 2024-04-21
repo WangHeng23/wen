@@ -76,11 +76,7 @@ Model::Model(const std::string& filename) : vertexCount(0), indexCount(0) {
     vertexCount = vertices_.size();
 }
 
-Offset Model::upload(
-    std::shared_ptr<VertexBuffer> vertexBuffer,
-    std::shared_ptr<IndexBuffer> indexBuffer,
-    Offset offset
-) {
+Offset Model::upload(std::shared_ptr<VertexBuffer> vertexBuffer, std::shared_ptr<IndexBuffer> indexBuffer, Offset offset) {
     offset_ = offset;
     auto temp = offset;
     temp.vertex = vertexBuffer->upload(vertices_, temp.vertex);
