@@ -1,2 +1,3 @@
 add_subdirectory(example)
 add_subdirectory(scenes)
+add_subdirectory(ray_tracing)

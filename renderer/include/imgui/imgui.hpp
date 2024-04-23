@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer.hpp"
+#include "../renderer.hpp"
 
 namespace wen {
 
