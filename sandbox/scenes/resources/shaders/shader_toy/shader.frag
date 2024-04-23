@@ -28,55 +28,158 @@ void main() {
 	mainImage(outColor, fragCoord);
 }
 
-#define steps 850.0
-
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+struct Ray
 {
-    vec3 pos = vec3( fragCoord/iResolution.x - vec2( 0.5, 0.5 ), 0.0 );
+    vec3 origin;
+    vec3 direction;
+};
 
-    vec3 origin = vec3( 0.0, 0.0, 1.0 );
-    vec3 ray_dir = pos - origin ;
-    vec3 c = vec3( -1.05241, -.8134335, -.95455);
+struct Sphere
+{
+    vec3 position;
+    float radius;
+    vec3 color;
+};
 
-    vec3 col;
-    float pitch = iTime / 5.0;
-    float cos_a = cos(pitch);
-    float sin_a = sin(pitch);
-    float yaw = 0.6+sin(iTime/2.0)/3.0;
-    float sin_b = sin( yaw );
-    float cos_b = cos( yaw );
-    mat3 rot_m = mat3( cos_a, 0.0, -sin_a,
-                    sin_a*-sin_b, cos_b, cos_a*-sin_b,
-                    sin_a*cos_b, sin_b, cos_a*cos_b );                        
+struct Plane
+{
+    vec3 normal;
+    float height;
+    vec3 color;
+};
 
-    origin = rot_m*vec3( 0,0,1.0  + sin(iTime*0.9 ) * .55 ) ;
-    origin.y = .9;
-    ray_dir = rot_m*ray_dir;
+vec3 LightShading(vec3 N,vec3 L,vec3 V,vec3 color)
+{
+    vec3 diffuse = max(0.,dot(N,-L))*color;
+    vec3 specular = pow(max(0.,dot(N,normalize(-L-V))),100.)*vec3(1.,1.,1.); 
+    return diffuse + specular;
+}
 
-    for( float depth = 60.0; depth < steps; depth ++ ) {
-        pos = origin +  depth * ray_dir * 0.003;
-        ray_dir = ray_dir * 1.003;
-        vec3 prev  = vec3( 1,1,1), prev_prev;
-        for( int idx=0; idx< 7;idx++ ) 
+
+// 光线和球体计算交点
+float Intersect(Ray ray,Sphere sphere)
+{
+    vec3 v = ray.origin - sphere.position;
+    //b^2-4ac
+    float a = dot(ray.direction,ray.direction);
+    float b = dot(ray.direction,v);
+    float c = dot(v,v) - sphere.radius * sphere.radius;
+    float value = b*b-a*c;
+    if(value < 0.)
+        return -1.;
+    if(value == 0.)
+        return - b/a;
+    float sqrtValue = sqrt(value);
+    float result = -b - sqrtValue;
+    if(result > 0.)
+        return result/a;
+    return -1.;
+}
+
+// 光线和地面计算交点
+float Intersect(Ray ray,Plane plane)
+{
+    float LDotN = dot(ray.direction,plane.normal);
+    if(LDotN > 0.)
+        return -1.;
+    return (plane.height - ray.origin.y)/ray.direction.y;
+}
+
+vec3 rotate(vec3 origin,vec3 target)
+{
+	float degree = iTime-1.;
+
+    vec3 relate = origin - target;
+	float x = relate.x * cos(degree) + relate.z * sin(degree) + target.x;
+	float z = -relate.x * sin(degree) + relate.z * cos(degree) + target.z;
+
+	return vec3(x,origin.y,z);
+}
+
+vec3 radiance(Ray ray)
+{
+    Sphere spheres[3];
+    spheres[0] = Sphere(vec3(0.0,3.0+(sin(iTime)+1.)*3.,10.0),3.0,vec3(1.0,0.0,0.0));
+    spheres[1] = Sphere(vec3(-2.0-sin(iTime)*3.,3.0,0.0),3.0,vec3(0.0,1.0,0.0));
+    spheres[2] = Sphere(rotate(vec3(0.0,3.0,7.0),vec3(-2.0,3.0,0.0)),3.0,vec3(0.0,0.0,1.0));
+    
+
+    Plane plane = Plane(vec3(0.0,1.0,0.0),0.0,vec3(0.8,0.5,0.));
+    vec3 skyColor = vec3(0.,0.,0.8);
+    vec3 cameraPos = ray.origin;
+
+    vec3 result = vec3(0.,0.,0.);
+    float intensity = 1.0;
+    for(int ti = 0;ti<1000;++ti)
+    {
+        vec3 L = ray.direction;
+        int sIndex = -1;
+        float t = -1.;
+        for(int i=0;i<3;++i)
         {
-            prev_prev = prev;
-            prev = pos;
-            pos = abs(pos);
-            pos =  pos / dot( pos, pos ) + c;
-            if( dot( pos,pos  )  > 6.89 ) 
+            float tt = Intersect(ray,spheres[i]);
+            if(tt > 0. && (tt < t || t < 0.))
             {
-                if( idx  >3  ) 
-                {
-                    col = normalize( prev - prev_prev ) / 2.0 + vec3( 0.5, 0.5, 0.5 );
-                } else  
-                {
+                sIndex = i;
+                t = tt;
+            }
+        }
 
-                  col = normalize( -prev-prev_prev ) / 2.0 + vec3( 0.5, 0.5, 0.5 );
-                } 
-                depth = 100000.0;
+        float tt = Intersect(ray,plane);
+
+        if(t<=0.)
+        {
+            if(tt > 0.)
+            {
+                vec3 pos = ray.origin + tt * ray.direction;
+                vec3 V = normalize(pos - cameraPos);
+                vec3 L = ray.direction;
+                vec3 normal = plane.normal;
+                vec3 refl = 2.*dot(normal,-ray.direction)*normal + ray.direction;
+                ray = Ray(pos,refl);
+                result += LightShading(normal,L,V, plane.color)*intensity; //地板色
+            }
+            else
+            {
+                result += skyColor*intensity;//天空色
                 break;
             }
         }
-    }    
-    fragColor = vec4(col,1.0);
+        else
+        {
+            if(t < tt || tt <= 0.)
+            {
+                vec3 pos = ray.origin + t * ray.direction;
+                 vec3 V = normalize(pos - cameraPos);
+                vec3 L = ray.direction;
+                vec3 normal = normalize(pos - spheres[sIndex].position);
+                vec3 refl = 2.*dot(normal,-ray.direction)*normal + ray.direction;
+                ray = Ray(pos,refl);
+                result += LightShading(normal,L,V,spheres[sIndex].color)*intensity;
+            }
+            else
+            {
+                vec3 pos = ray.origin + tt * ray.direction;
+                vec3 V = normalize(pos - cameraPos);
+                vec3 L = ray.direction;
+                vec3 normal = plane.normal;
+                vec3 refl = 2.*dot(normal,-ray.direction)*normal + ray.direction;
+                ray = Ray(pos,refl);
+                result += LightShading(normal,L,V,plane.color)*intensity; //地板色
+            }
+        }
+
+        intensity /= 2.;
+    }
+    return result;
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    vec2 uv = (fragCoord/iResolution.xy - vec2(0.5,0.5));
+    uv.x *= (iResolution.x/iResolution.y);
+    vec3 cameraPos = vec3(20.,5.,0.);
+    Ray ray = Ray(cameraPos,normalize(vec3(-1.,uv.y,uv.x)));
+
+    fragColor = vec4(radiance(ray),1.0);
 }

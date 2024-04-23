@@ -40,7 +40,8 @@ void ShaderToy::initialize() {
     auto descriptorSet = interface->createDescriptorSet();
     descriptorSet->addDescriptors({
         {0, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment}, // input
-    }).build();
+    });
+    descriptorSet->build();
 
     // push constants
     pushConstants_ = interface->createPushConstants(
@@ -53,10 +54,10 @@ void ShaderToy::initialize() {
 
     vertexBuffer_ = interface->createVertexBuffer(sizeof(glm::vec2), 4);
     vertexBuffer_->upload<glm::vec2>({
-        { 1.0f,  1.f},
-        {-1.0f,  1.f},
-        { 1.0f, -1.f},
-        {-1.0f, -1.f},
+        { 1.0f,  1.0f},
+        {-1.0f,  1.0f},
+        { 1.0f, -1.0f},
+        {-1.0f, -1.0f},
     });
 
     indexBuffer_ = interface->createIndexBuffer(wen::IndexType::eUint16, 6);
@@ -74,20 +75,20 @@ void ShaderToy::initialize() {
     renderPipeline_->compile({
         .cullMode = wen::CullMode::eNone,
         .dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
-        .depthTestEnable = VK_FALSE,
+        .depthTestEnable = false,
     });
 }
 
 void ShaderToy::update(float ts) {
-    time_ += ts;
-    input_->data->iTimeDelta = ts;
-    input_->data->iTime = time_;
-    input_->data->iFrameRate = ImGui::GetIO().Framerate;
-
     auto [width, height] = wen::settings->windowSize;
     auto w = static_cast<float>(width), h = static_cast<float>(height);
     pushConstants_->pushConstant("width", &w);
     pushConstants_->pushConstant("height", &h);
+
+    time_ += ts;
+    input_->data->iTimeDelta = ts;
+    input_->data->iTime = time_;
+    input_->data->iFrameRate = ImGui::GetIO().Framerate;
     input_->data->iResolution = glm::vec3(w, h, 1.0f);
 }
 
