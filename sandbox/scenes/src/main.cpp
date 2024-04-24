@@ -1,5 +1,6 @@
 #include "scenes/model_scene.hpp"
 #include "scenes/shader_toy.hpp"
+#include "scenes/pbr_scene.hpp"
 
 int main() {
     wen::initialize();
@@ -19,7 +20,8 @@ int main() {
 
     auto sceneManager = new SceneManager(interface);
     // sceneManager->setScene<ModelScene>();
-    sceneManager->setScene<ShaderToy>();
+    // sceneManager->setScene<ShaderToy>();
+    sceneManager->setScene<PBRScene>();
     while (!wen::shouldClose()) {
         wen::pollEvents();
         sceneManager->update();

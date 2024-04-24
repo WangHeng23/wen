@@ -152,7 +152,7 @@ int main() {
             .mipmapMode = wen::SamplerFilter::eLinear,
             .mipLevels = texture->getMipLevels()
         });
-        descriptorSet->bindUniform(0, camera->uniform);
+        descriptorSet->bindUniform(0, camera->uniformBuffer);
         descriptorSet->bindTexture(1, texture, sampler);
 
         // 主循环

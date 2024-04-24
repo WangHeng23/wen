@@ -3,7 +3,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-Light::Light(std::shared_ptr<wen::Interface> interface) {
+ModelScene::Light::Light(std::shared_ptr<wen::Interface> interface) {
     uniformBuffer = interface->createUniformBuffer(sizeof(LightUniform));
     data = static_cast<LightUniform*>(uniformBuffer->getData());
     memset(data, 0, sizeof(LightUniform));
@@ -91,7 +91,7 @@ void ModelScene::initialize() {
     camera->data.position = {0.0f, 0.0f, -n - 3.0f};
     camera->direction = {0.0f, 0.0f, 1.0f};
     camera->upload();
-    descriptorSet->bindUniform(0, camera->uniform);
+    descriptorSet->bindUniform(0, camera->uniformBuffer);
     // light
     light = std::make_unique<Light>(interface);
     light->data->lights[0].position = glm::vec3(1.0f, 1.0f, 1.0f);

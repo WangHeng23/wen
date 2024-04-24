@@ -88,7 +88,7 @@ int main() {
         camera->data.position = {0.0f, 0.0f, -3.0f};
         camera->direction = {0.0f, 0.0f, 1.0f};
         camera->upload();
-        descriptorSet->bindUniform(0, camera->uniform);
+        descriptorSet->bindUniform(0, camera->uniformBuffer);
 
         // model
         auto model = interface->loadModel("dragon.obj");

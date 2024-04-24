@@ -11,7 +11,7 @@ namespace wen {
 Camera::Camera() {
     data.position = glm::vec3(0.0f, 0.0f, 3.0f);
     direction = glm::vec3(0.0f, 0.0f, -1.0f);
-    uniform = std::make_shared<UniformBuffer>(sizeof(CameraData), false);
+    uniformBuffer = std::make_shared<UniformBuffer>(sizeof(CameraData), false);
     upload();
 }
 
@@ -80,7 +80,7 @@ void Camera::upload() {
     auto [width, height] = settings->windowSize;
     auto w = static_cast<float>(width), h = static_cast<float>(height);
     data.project = glm::perspective(glm::radians(60.0f), w / h, 0.1f, 100.0f);
-    memcpy(uniform->getData(), &data, sizeof(CameraData));
+    memcpy(uniformBuffer->getData(), &data, sizeof(CameraData));
 }
 
 } // namespace wen

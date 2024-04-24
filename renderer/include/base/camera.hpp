@@ -14,7 +14,7 @@ public:
     } data;
 
     glm::vec3 direction;
-    std::shared_ptr<wen::UniformBuffer> uniform;
+    std::shared_ptr<wen::UniformBuffer> uniformBuffer;
 
 public:
     Camera();
