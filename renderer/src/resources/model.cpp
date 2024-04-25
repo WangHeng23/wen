@@ -57,11 +57,15 @@ Model::Model(const std::string& filename) : vertexCount(0), indexCount(0) {
                 attrib.vertices[3 * index.vertex_index + 1],
                 attrib.vertices[3 * index.vertex_index + 2]
             };
-            vertex.normal = {
-                attrib.normals[3 * index.normal_index + 0],
-                attrib.normals[3 * index.normal_index + 1],
-                attrib.normals[3 * index.normal_index + 2]
-            };
+            if (index.normal_index < 0) {
+                vertex.normal = {0.0f, 0.0f, 0.0f};
+            } else {
+                vertex.normal = {
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2]
+                };
+            }
             vertex.color = {1.0f, 1.0f, 1.0f};
 
             if (uniqueVertices.count(vertex) == 0) {
@@ -71,7 +75,7 @@ Model::Model(const std::string& filename) : vertexCount(0), indexCount(0) {
             mesh->indices.push_back(uniqueVertices[vertex]);
         }
         indexCount += mesh->indices.size();
-        meshes_.insert(std::make_pair(shape.name, *mesh));
+        meshes_.insert(std::make_pair(shape.name, std::move(mesh)));
     }
     vertexCount = vertices_.size();
 }
@@ -81,9 +85,9 @@ Offset Model::upload(std::shared_ptr<VertexBuffer> vertexBuffer, std::shared_ptr
     auto temp = offset;
     temp.vertex = vertexBuffer->upload(vertices_, temp.vertex);
     for (auto& [name, mesh] : meshes_) {
-        mesh.offset.vertex = offset_.vertex;
-        mesh.offset.index = temp.index;
-        temp.index = indexBuffer->upload(mesh.indices, temp.index);
+        mesh->offset.vertex = offset_.vertex;
+        mesh->offset.index = temp.index;
+        temp.index = indexBuffer->upload(mesh->indices, temp.index);
     }
     return temp;
 }

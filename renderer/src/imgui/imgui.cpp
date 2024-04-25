@@ -108,7 +108,7 @@ ImGuiLayer::ImGuiLayer(std::shared_ptr<Renderer>& renderer) : renderer_(renderer
 }
 
 void ImGuiLayer::begin() {
-    renderer_->toNextSubpass("imgui subpass");
+    renderer_->nextSubpass("imgui subpass");
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

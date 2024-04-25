@@ -47,7 +47,7 @@ public:
 
 private:
     std::vector<Vertex> vertices_;
-    std::map<std::string, Mesh> meshes_;
+    std::map<std::string, std::shared_ptr<Mesh>> meshes_;
     Offset offset_;
 };
 

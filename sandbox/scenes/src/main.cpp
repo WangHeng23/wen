@@ -2,6 +2,7 @@
 #include "scenes/shader_toy.hpp"
 #include "scenes/pbr_scene.hpp"
 #include "scenes/ray_marching.hpp"
+#include "scenes/model_manager.hpp"
 
 int main() {
     wen::initialize();
@@ -23,7 +24,8 @@ int main() {
     // sceneManager->setScene<ModelScene>();
     // sceneManager->setScene<ShaderToy>();
     // sceneManager->setScene<PBRScene>();
-    sceneManager->setScene<RayMarching>();
+    // sceneManager->setScene<RayMarching>();
+    sceneManager->setScene<ModelManager>();
     while (!wen::shouldClose()) {
         wen::pollEvents();
         sceneManager->update();

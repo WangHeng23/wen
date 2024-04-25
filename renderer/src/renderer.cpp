@@ -242,12 +242,16 @@ void Renderer::drawModel(const std::shared_ptr<Model>& model, uint32_t instanceC
     currentBuffer_.drawIndexed(model->indexCount, instanceCount, model->offset().index, model->offset().vertex, firstInstance);
 }
 
+void Renderer::drawMesh(const std::shared_ptr<Mesh>& mesh, uint32_t instanceCount, uint32_t firstInstance) {
+    currentBuffer_.drawIndexed(mesh->indices.size(), instanceCount, mesh->offset.index, mesh->offset.vertex, firstInstance);
+}
+
 void Renderer::nextSubpass() {
     currentBuffer_.nextSubpass(vk::SubpassContents::eInline);
     currentSubpass_++;
 }
 
-void Renderer::toNextSubpass(const std::string& name) {
+void Renderer::nextSubpass(const std::string& name) {
     auto index = renderPass->getSubpassIndex(name);
     while (currentSubpass_ != index) {
         nextSubpass();
