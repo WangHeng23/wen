@@ -1,6 +1,7 @@
 #include "scenes/model_scene.hpp"
 #include "scenes/shader_toy.hpp"
 #include "scenes/pbr_scene.hpp"
+#include "scenes/ray_marching.hpp"
 
 int main() {
     wen::initialize();
@@ -19,9 +20,10 @@ int main() {
     auto interface = context.createInterface("./sandbox/scenes/resources");
 
     auto sceneManager = new SceneManager(interface);
-    sceneManager->setScene<ModelScene>();
+    // sceneManager->setScene<ModelScene>();
     // sceneManager->setScene<ShaderToy>();
     // sceneManager->setScene<PBRScene>();
+    sceneManager->setScene<RayMarching>();
     while (!wen::shouldClose()) {
         wen::pollEvents();
         sceneManager->update();

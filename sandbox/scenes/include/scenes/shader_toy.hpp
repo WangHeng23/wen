@@ -2,8 +2,7 @@
 
 #include "scenes.hpp"
 
-class ShaderToyInput {
-public:
+struct ShaderToyInput {
     ShaderToyInput(wen::Interface& interface);
 
     struct ShadertoyInputUniform {
