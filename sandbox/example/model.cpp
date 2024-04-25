@@ -59,7 +59,7 @@ int main() {
                 .binding = 0,
                 .inputRate = wen::InputRate::eVertex,
                 .formats = {
-                    wen::VertexType::eFloat3, // vertex
+                    wen::VertexType::eFloat3, // position 
                     wen::VertexType::eFloat3, // normal
                     wen::VertexType::eFloat3, // color
                 }

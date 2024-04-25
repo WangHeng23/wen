@@ -12,6 +12,7 @@ public:
 
     void setOutputAttachment(const std::string& name, vk::ImageLayout layout = vk::ImageLayout::eColorAttachmentOptimal);
     void setDepthStencilAttachment(const std::string& name, vk::ImageLayout layout = vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    void setInputAttachment(const std::string& name, vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal);
 
     vk::SubpassDescription build();
 
@@ -27,6 +28,7 @@ private:
     std::vector<vk::AttachmentReference> outputAttachments_;
     std::optional<vk::AttachmentReference> depthStencilAttachment_;
     std::vector<vk::AttachmentReference> resolveAttachments_;
+    std::vector<vk::AttachmentReference> inputAttachments_;
 };
 
 } // namespace wen

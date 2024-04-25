@@ -45,6 +45,24 @@ void RenderPass::addAttachment(const std::string& name, AttachmentType type) {
             }
             attachment.writeAttachment.stencilLoadOp = vk::AttachmentLoadOp::eClear;
             break;
+        case AttachmentType::eRGBA32F:
+            attachment.writeAttachment.format = vk::Format::eR32G32B32A32Sfloat;
+            attachment.writeAttachment.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            attachment.usage = vk::ImageUsageFlagBits::eColorAttachment;
+            attachment.aspect = vk::ImageAspectFlagBits::eColor;
+            attachment.clearColor = {{0.0f, 0.0f, 0.0f, 1.0f}};
+            if (settings->msaa()) {
+                attachment.readAttachment = attachment.writeAttachment;
+                attachment.readAttachment->samples = vk::SampleCountFlagBits::e1;
+                attachment.readAttachment->loadOp = vk::AttachmentLoadOp::eDontCare;
+                attachment.writeAttachment.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+                attachment.read_usage = vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eSampled;
+                attachment.read_offset = readAttachments.size();
+                readAttachments.push_back(attachment);
+            } else {
+                attachment.usage |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eSampled;
+            }
+            break;
     }
 
     static bool first = true;

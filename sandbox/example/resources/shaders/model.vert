@@ -14,8 +14,8 @@ layout (binding = 0) uniform Camera {
 } camera;
 
 void main() {
-    vec4 pos = camera.project * camera.view * vec4(inPosition, 1.0);
-    gl_Position = vec4(pos);
+    vec4 position = camera.project * camera.view * vec4(inPosition, 1.0);
+    gl_Position = vec4(position);
     fragNormal = inNormal;
     fragColor = inColor;
 }

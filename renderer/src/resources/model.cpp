@@ -10,7 +10,7 @@ namespace std {
 template <>
 struct hash<wen::Vertex> {
     size_t operator()(wen::Vertex const& vertex) const {
-        return ((hash<glm::vec3>()(vertex.vertex) ^
+        return ((hash<glm::vec3>()(vertex.position) ^
                 (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
                 (hash<glm::vec2>()(vertex.color) << 1);
     }
@@ -52,7 +52,7 @@ Model::Model(const std::string& filename) : vertexCount(0), indexCount(0) {
         std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex = {};
-            vertex.vertex = {
+            vertex.position = {
                 attrib.vertices[3 * index.vertex_index + 0],
                 attrib.vertices[3 * index.vertex_index + 1],
                 attrib.vertices[3 * index.vertex_index + 2]

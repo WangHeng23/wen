@@ -13,21 +13,32 @@ void ModelScene::initialize() {
     auto renderPass = interface->createRenderPass();
     renderPass->addAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT, wen::AttachmentType::eColor);
     renderPass->addAttachment("depth buffer", wen::AttachmentType::eDepth);
+    renderPass->addAttachment("position buffer", wen::AttachmentType::eRGBA32F);
+    renderPass->addAttachment("normal buffer", wen::AttachmentType::eRGBA32F);
+    renderPass->addAttachment("color buffer", wen::AttachmentType::eRGBA32F);
     
-    auto& subpass = renderPass->addSubpass("main subpass");
-    subpass.setOutputAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT);
-    subpass.setDepthStencilAttachment("depth buffer");
+    auto& mainSubpass = renderPass->addSubpass("main subpass");
+    mainSubpass.setOutputAttachment("position buffer");
+    mainSubpass.setOutputAttachment("normal buffer");
+    mainSubpass.setOutputAttachment("color buffer");
+    mainSubpass.setDepthStencilAttachment("depth buffer");
+
+    auto& postSubpass = renderPass->addSubpass("post subpass");
+    postSubpass.setInputAttachment("position buffer");
+    postSubpass.setInputAttachment("normal buffer");
+    postSubpass.setInputAttachment("color buffer");
+    postSubpass.setOutputAttachment(wen::SWAPCHAIN_IMAGE_ATTACHMENT);
     
     renderPass->addSubpassDependency(
-        wen::EXTERNAL_SUBPASS,
         "main subpass",
+        "post subpass",
         {
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::PipelineStageFlagBits::eColorAttachmentOutput
         },
         {
-            vk::AccessFlagBits::eNone,
-            vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
+            vk::AccessFlagBits::eColorAttachmentWrite,
+            vk::AccessFlagBits::eColorAttachmentRead
         }
     );
     renderPass->build();
@@ -36,11 +47,16 @@ void ModelScene::initialize() {
     imguiLayer = interface->createImGuiLayer(renderer);
 
     // shader
-    auto vertShader = interface->compileShader("model_scene/model.vert", wen::ShaderStage::eVertex);
-    auto fragShader = interface->compileShader("model_scene/model.frag", wen::ShaderStage::eFragment);
-    shaderProgram = interface->createGraphicsShaderProgram();
-    shaderProgram->setVertexShader(vertShader);
-    shaderProgram->setFragmentShader(fragShader);
+    auto mainVertShader = interface->compileShader("model_scene/main.vert", wen::ShaderStage::eVertex);
+    auto mainFragShader = interface->compileShader("model_scene/main.frag", wen::ShaderStage::eFragment);
+    mainShaderProgram = interface->createGraphicsShaderProgram();
+    mainShaderProgram->setVertexShader(mainVertShader);
+    mainShaderProgram->setFragmentShader(mainFragShader);
+    auto postVertShader = interface->compileShader("model_scene/post.vert", wen::ShaderStage::eVertex);
+    auto postFragShader = interface->compileShader("model_scene/post.frag", wen::ShaderStage::eFragment);
+    postShaderProgram = interface->createGraphicsShaderProgram();
+    postShaderProgram->setVertexShader(postVertShader);
+    postShaderProgram->setFragmentShader(postFragShader);
 
     // vertex input
     auto vertexInput = interface->createVertexInput({
@@ -48,7 +64,7 @@ void ModelScene::initialize() {
             .binding = 0,
             .inputRate = wen::InputRate::eVertex,
             .formats = {
-                wen::VertexType::eFloat3, // vertex
+                wen::VertexType::eFloat3, // position
                 wen::VertexType::eFloat3, // normal
                 wen::VertexType::eFloat3, // color
             }
@@ -63,10 +79,15 @@ void ModelScene::initialize() {
     });
 
     // descriptor set
-    auto descriptorSet = interface->createDescriptorSet();
-    descriptorSet->addDescriptors({
+    auto mainDescriptorSet = interface->createDescriptorSet();
+    mainDescriptorSet->addDescriptors({
         {0, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex}, // camera
-        {1, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex}, // light
+    }).build();
+    auto postDescriptorSet = interface->createDescriptorSet();
+    postDescriptorSet->addDescriptors({
+        {0, wen::DescriptorType::eInputAttachment, 3, wen::ShaderStage::eFragment}, // input attachment
+        {1, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment}, // camera
+        {2, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment}, // light
     }).build();
 
     // ------------vertex input----------------
@@ -86,31 +107,50 @@ void ModelScene::initialize() {
     // ----------------------------------------
 
     // ------------descriptor set----------------
+    // main descriptor set
     // camera
     camera = std::make_unique<wen::Camera>();
     camera->data.position = {0.0f, 0.0f, -n - 3.0f};
     camera->direction = {0.0f, 0.0f, 1.0f};
     camera->upload();
-    descriptorSet->bindUniform(0, camera->uniformBuffer);
+    mainDescriptorSet->bindUniform(0, camera->uniformBuffer);
+    // post descriptor set
+    // sampler
+    auto sampler = interface->createSampler();
+    postDescriptorSet->bindInputAttachments(
+        0, 
+        renderer,
+        {
+            {"position buffer", sampler},
+            {"normal buffer", sampler},
+            {"color buffer", sampler},
+        }
+    );
+    // camera
+    postDescriptorSet->bindUniform(1, camera->uniformBuffer);
     // light
     light = std::make_unique<Light>(interface);
     light->data->lights[0].position = glm::vec3(1.0f, 1.0f, 1.0f);
     light->data->lights[0].color = glm::vec3(1.0f, 1.0f, 1.0f);
     light->data->lights[0].intensity = 1.0f;
     light->data->lightCount = 1;
-    descriptorSet->bindUniform(1, light->uniformBuffer);
+    postDescriptorSet->bindUniform(2, light->uniformBuffer);
     // ----------------------------------------
 
     // render pipeline
-    renderPipeline = interface->createGraphicsRenderPipeline(renderer, shaderProgram, "main subpass");
-    renderPipeline->setVertexInput(vertexInput);
-    renderPipeline->setDescriptorSet(descriptorSet);
-    renderPipeline->compile({
-        .topology = wen::Topology::eTriangleList,
-        .polygonMode = wen::PolygonMode::eFill,
-        .lineWidth = 2.0f,
-        .cullMode = wen::CullMode::eNone,
+    mainRenderPipeline = interface->createGraphicsRenderPipeline(renderer, mainShaderProgram, "main subpass");
+    mainRenderPipeline->setVertexInput(vertexInput);
+    mainRenderPipeline->setDescriptorSet(mainDescriptorSet);
+    mainRenderPipeline->compile({
+        .cullMode = wen::CullMode::eBack,
+        .frontFace = wen::FrontFace::eCounterClockwise,
         .dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
+        .depthTestEnable = true,
+    });
+    postRenderPipeline = interface->createGraphicsRenderPipeline(renderer, postShaderProgram, "post subpass");
+    postRenderPipeline->setDescriptorSet(postDescriptorSet);
+    postRenderPipeline->compile({
+        .cullMode = wen::CullMode::eNone,
         .depthTestEnable = true,
     });
 }
@@ -124,24 +164,26 @@ void ModelScene::update(float ts) {
 }
 
 void ModelScene::render() {
-    renderer->setClearColor(wen::SWAPCHAIN_IMAGE_ATTACHMENT, {{clearColor.r, clearColor.g, clearColor.b, 1.0f}});
-
     auto [width, height] = wen::settings->windowSize;
     auto w = static_cast<float>(width), h = static_cast<float>(height);
-    renderer->getBindPoint(shaderProgram);
-    renderer->bindResources(renderPipeline);
+    renderer->getBindPoint(mainShaderProgram);
+    renderer->bindResources(mainRenderPipeline);
     renderer->setViewport(0, h, w, -h);
     renderer->setScissor(0, 0, w, h);
     renderer->bindVertexBuffers({vertexBuffer, offsetsBuffer});
     renderer->bindIndexBuffer(indexBuffer);
     renderer->drawModel(model, offsets.size(), 0);
+    renderer->nextSubpass();
+    renderer->getBindPoint(postShaderProgram);
+    renderer->bindResources(postRenderPipeline);
+    renderer->drawIndexed(3, 2, 0, 0, 0);
 }
 
 void ModelScene::imgui() {
     ImGui::Text("(%.1f FPS)", ImGui::GetIO().Framerate);
-    ImGui::ColorEdit3("clear color", &clearColor.r);
     ImGui::ColorEdit3("light color", glm::value_ptr(light->data->lights[0].color));
     ImGui::SliderFloat("light intensity", &light->data->lights[0].intensity, 0.0f, 10.0f);
+    ImGui::Separator();
     ImGui::Text("model count: %d", n * n * n);
     ImGui::Text("vertex count: %d", model->vertexCount);
     ImGui::Text("index count: %d", model->indexCount);
@@ -152,8 +194,10 @@ void ModelScene::destroy() {
     camera.reset();
     light.reset();
     model.reset();
-    shaderProgram.reset();
-    renderPipeline.reset();
+    mainShaderProgram.reset();
+    postShaderProgram.reset();
+    mainRenderPipeline.reset();
+    postRenderPipeline.reset();
     vertexBuffer.reset();
     indexBuffer.reset();
     offsetsBuffer.reset();

@@ -31,6 +31,7 @@ private:
 
 class FramebufferStore {
     friend class Renderer;
+    friend class DescriptorSet;
 
 public:
     FramebufferStore(const Renderer& renderer);

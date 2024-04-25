@@ -19,9 +19,9 @@ int main() {
     auto interface = context.createInterface("./sandbox/scenes/resources");
 
     auto sceneManager = new SceneManager(interface);
-    // sceneManager->setScene<ModelScene>();
+    sceneManager->setScene<ModelScene>();
     // sceneManager->setScene<ShaderToy>();
-    sceneManager->setScene<PBRScene>();
+    // sceneManager->setScene<PBRScene>();
     while (!wen::shouldClose()) {
         wen::pollEvents();
         sceneManager->update();

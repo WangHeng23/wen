@@ -35,7 +35,7 @@ public:
     std::shared_ptr<UniformBuffer> createUniformBuffer(uint64_t size, bool inFlight = false);
     std::shared_ptr<Texture> createTexture(const std::string& filename, uint32_t mipLevels = 0);
     std::shared_ptr<Texture> createTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t mipLevels = 0);
-    std::shared_ptr<Sampler> createSampler(const SamplerInfos& infos);
+    std::shared_ptr<Sampler> createSampler(const SamplerInfos& infos = {});
     std::shared_ptr<PushConstants> createPushConstants(ShaderStages stages, const std::vector<PushConstantInfo>& infos);
     std::shared_ptr<Model> loadModel(const std::string& filename);
 

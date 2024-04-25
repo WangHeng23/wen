@@ -119,4 +119,34 @@ void DescriptorSet::bindTexture(uint32_t binding, std::shared_ptr<Texture> textu
     bindTextures(binding, {{texture, sampler}});
 }
 
+void DescriptorSet::bindInputAttachments(uint32_t binding, const std::shared_ptr<Renderer>& renderer, const std::vector<std::pair<std::string, std::shared_ptr<Sampler>>>& names_samplers) {
+    auto layoutBinding = getLayoutBinding(binding);
+    if ((layoutBinding.descriptorType != vk::DescriptorType::eInputAttachment) &&
+        (layoutBinding.descriptorType != vk::DescriptorType::eCombinedImageSampler)) {
+        WEN_ERROR("binding {} is not a inputAttachment descriptor!", binding);
+        return;
+    }
+    assert(layoutBinding.descriptorCount == names_samplers.size());
+    for (uint32_t i = 0; i < settings->maxFramesInFlight; i++) {
+        std::vector<vk::DescriptorImageInfo> infos(layoutBinding.descriptorCount);
+        for (uint32_t j = 0; j < layoutBinding.descriptorCount; j++) {
+            auto index = renderer->renderPass->getAttachmentIndex(names_samplers[j].first, true);
+            infos[j].setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                    .setImageView(renderer->framebufferStore->attachments_[index].imageView)
+                    .setSampler(names_samplers[j].second->sampler);
+        }
+        vk::WriteDescriptorSet write = {};
+        write.setDstSet(descriptorSets_[i])
+             .setDstBinding(layoutBinding.binding)
+             .setDstArrayElement(0)
+             .setDescriptorType(layoutBinding.descriptorType)
+             .setImageInfo(infos);
+        manager->device->device.updateDescriptorSets({write}, {});
+    }
+}
+
+void DescriptorSet::bindInputAttachment(uint32_t binding, const std::shared_ptr<Renderer>& renderer, const std::string& name, std::shared_ptr<Sampler> sampler) {
+    bindInputAttachments(binding, renderer, {{name, sampler}});
+}
+
 } // namespace wen

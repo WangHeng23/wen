@@ -176,6 +176,7 @@ vk::DescriptorType convert<vk::DescriptorType>(DescriptorType type) {
     switch (type) {
         case DescriptorType::eUniform: return vk::DescriptorType::eUniformBuffer;
         case DescriptorType::eTexture: return vk::DescriptorType::eCombinedImageSampler;
+        case DescriptorType::eInputAttachment: return vk::DescriptorType::eInputAttachment;
     }
 }
 

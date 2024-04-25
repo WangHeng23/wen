@@ -7,12 +7,12 @@
 namespace wen {
 
 struct Vertex {
-    glm::vec3 vertex;
+    glm::vec3 position;
     glm::vec3 normal;
     glm::vec3 color;
 
     bool operator==(const Vertex& other) const {
-        return vertex == other.vertex && normal == other.normal && color == other.color;
+        return position == other.position && normal == other.normal && color == other.color;
     }
 };
 

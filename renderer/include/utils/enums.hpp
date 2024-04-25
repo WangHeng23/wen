@@ -213,6 +213,7 @@ VULKAN_HPP_INLINE VULKAN_HPP_CONSTEXPR Flags<BitType> operator~( BitType bit ) V
 enum class AttachmentType {
     eColor,
     eDepth,
+    eRGBA32F
 };
 
 enum class Topology {
@@ -280,6 +281,7 @@ enum class IndexType {
 enum class DescriptorType {
     eUniform,
     eTexture,
+    eInputAttachment,
 };
 
 enum class SamplerFilter {

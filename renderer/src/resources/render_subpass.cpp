@@ -35,12 +35,18 @@ void RenderSubpass::setDepthStencilAttachment(const std::string& name, vk::Image
     depthStencilAttachment_ = createAttachmentReference(name, layout, false); 
 }
 
+void RenderSubpass::setInputAttachment(const std::string& name, vk::ImageLayout layout) {
+    inputAttachments_.push_back(createAttachmentReference(name, layout, true));
+}
+
 vk::SubpassDescription RenderSubpass::build() {
     vk::SubpassDescription subpass = {};
 
     subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
            .setColorAttachmentCount(outputAttachments_.size())
-           .setColorAttachments(outputAttachments_);
+           .setColorAttachments(outputAttachments_)
+           .setInputAttachmentCount(inputAttachments_.size())
+           .setInputAttachments(inputAttachments_);
 
     if (depthStencilAttachment_.has_value()) {
         subpass.setPDepthStencilAttachment(&depthStencilAttachment_.value());
