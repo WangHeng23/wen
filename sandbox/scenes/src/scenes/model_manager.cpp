@@ -163,7 +163,7 @@ void ModelManager::imgui() {
     if (!selected.empty()) {
         auto& info = models_[querys[selected].first];
         std::vector<std::string> meshNames;
-        for (auto &[name, mesh] : info.model->meshes()) {
+        for (auto& [name, mesh] : info.model->meshes()) {
             meshNames.push_back(name);
         }
         for (auto& meshName : meshNames) {

@@ -9,6 +9,7 @@
 
 namespace wen {
 
+class GraphicsRenderPipeline;
 class Renderer final {
 public:
     Renderer(std::shared_ptr<RenderPass> renderPass);

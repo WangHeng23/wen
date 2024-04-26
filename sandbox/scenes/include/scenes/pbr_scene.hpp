@@ -37,7 +37,7 @@ public:
     };
 
 public:
-    PBRScene(std::shared_ptr<wen::Interface> interface) : Scene(interface) {};
+    PBRScene(std::shared_ptr<wen::Interface> interface) : Scene(interface) {}
 
     void initialize() override;
     void update(float ts) override;

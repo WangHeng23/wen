@@ -13,7 +13,7 @@ public:
     Image(uint32_t width, uint32_t height, ImageFormat format);
     ~Image();
 
-    void create(uint64_t size);
+    void create();
     void set(const void* data);
     void resize(uint32_t width, uint32_t height);
     void reset();

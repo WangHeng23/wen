@@ -45,14 +45,14 @@ static vk::Format convert(ImageFormat format) {
 
 Image::Image(uint32_t width, uint32_t height, ImageFormat format)
     : width_(width), height_(height), format_(format) {
-    create(width_ * height_ * Utils::BytesPerPixel(format_));
+    create();
 }
 
 Image::~Image() {
     reset();
 }
 
-void Image::create(uint64_t size) {
+void Image::create() {
     auto device = Application::getDevice();
     vk::Format format = Utils::convert(format_);
 
@@ -190,7 +190,7 @@ void Image::resize(uint32_t width, uint32_t height) {
     width_ = width;
     height_ = height;
     reset();
-    create(width_ * height_ * Utils::BytesPerPixel(format_));
+    create();
 }
 
 void Image::reset() {

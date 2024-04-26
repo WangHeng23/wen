@@ -4,6 +4,8 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
+static Application* application = nullptr;
+
 static vk::Instance gInstance = nullptr;
 static vk::PhysicalDevice gPhysicalDevice = nullptr;
 static vk::Device gDevice = nullptr;
@@ -112,8 +114,8 @@ Application::Application() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window_ = glfwCreateWindow(
-        wen::settings->windowInfo.width,
-        wen::settings->windowInfo.height,
+        static_cast<int>(wen::settings->windowInfo.width),
+        static_cast<int>(wen::settings->windowInfo.height),
         wen::settings->appName.c_str(),
         nullptr, nullptr
     );
@@ -136,7 +138,6 @@ void Application::init() {
     {
         gPhysicalDevice = gInstance.enumeratePhysicalDevices().front();
 
-        vk::QueueFamilyProperties queueProperties;
         auto queueFamilies = gPhysicalDevice.getQueueFamilyProperties();
         for (uint32_t i = 0; i < queueFamilies.size(); i++) {
             if (queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics) {
@@ -281,6 +282,7 @@ void Application::init() {
 }
 
 void Application::run() {
+    application = this;
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
         for (auto& layer : layers_) {
@@ -359,6 +361,7 @@ void Application::run() {
 }
 
 Application::~Application() {
+    application = nullptr;
     layers_.clear();
 
     gDevice.waitIdle();
@@ -377,6 +380,10 @@ Application::~Application() {
     gDevice.destroyDescriptorPool(gDescriptorPool);
     gDevice.destroy();
     gInstance.destroy();
+}
+
+Application& Application::get() {
+    return *application;
 }
 
 vk::Instance Application::getInstance() {
@@ -405,7 +412,7 @@ vk::CommandBuffer Application::allocateSingleUse() {
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     cmdbuf.begin(beginInfo);
 
-    return std::move(cmdbuf);
+    return cmdbuf;
 }
 
 void Application::freeSingleUse(vk::CommandBuffer cmdbuf) {

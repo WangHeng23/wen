@@ -23,9 +23,12 @@ public:
     void init();
     void run();
 
-    static vk::Instance getInstance();
+    [[maybe_unused]] static vk::Instance getInstance();
     static vk::PhysicalDevice getPhysicalDevice();
     static vk::Device getDevice();
+
+    static Application& get();
+    auto getWindow() { return window_; }
 
     static vk::CommandBuffer allocateSingleUse();
     static void freeSingleUse(vk::CommandBuffer cmdbuf);

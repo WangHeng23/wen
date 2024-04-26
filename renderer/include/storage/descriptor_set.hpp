@@ -21,6 +21,7 @@ struct DescriptorInfo {
     const vk::Sampler* samplers;
 };
 
+class Renderer;
 class DescriptorSet final {
     friend class RenderPipeline;
     friend class Renderer;
