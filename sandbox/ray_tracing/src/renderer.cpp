@@ -7,7 +7,7 @@
 
 static uint32_t convert(glm::vec4 color) {
     color = glm::sqrt(color);
-    color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(0.999f));
+    color = glm::clamp(color, glm::vec4(0.001f), glm::vec4(0.999f));
     uint8_t r = static_cast<uint8_t>(color.r * 255.0f);
     uint8_t g = static_cast<uint8_t>(color.g * 255.0f);
     uint8_t b = static_cast<uint8_t>(color.b * 255.0f);
@@ -51,24 +51,28 @@ void Renderer::render(const Camera& camera, const Scene& scene) {
 #if MT
     std::for_each(std::execution::par, vertical_.begin(), vertical_.end(), [&](uint32_t y) {
         std::for_each(std::execution::par, horizontal_.begin(), horizontal_.end(), [&](uint32_t x) {
-            Ray ray = pixel(x, y);
-            glm::vec4 color = glm::vec4(traceRay(ray, 10), 1.0f);
-            accumulation_[y * image_->width() + x] += color;
-            color = accumulation_[y * image_->width() + x];
-            color /= (float)index_;
-            data_[y * image_->width() + x] = convert(color);
-        });
+            for (int s = 0; s < samples; s++) {
+                Ray ray = pixel(x, y, s);
+                glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f) / (float)samples;
+                accumulation_[y * image_->width() + x] += color;
+                color = accumulation_[y * image_->width() + x];
+                color /= (float)index_;
+                data_[y * image_->width() + x] = convert(color);
+            } 
+         });
     });
 #else
     auto w = image_->width(), h = image_->height();
     for (uint32_t y = 0; y < h; y++) {
         for (uint32_t x = 0; x < w; x++) {
-            Ray ray = pixel(x, y);
-            glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f);
-            accumulation_[y * w + x] += color;
-            color = accumulation_[y * w + x];
-            color /= (float)index_;
-            data_[y * w + x] = convert(color);
+            for (int s = 0; s < samples; s++) {
+                Ray ray = pixel(x, y, s);
+                glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f) / (float)samples;
+                accumulation_[y * w + x] += color;
+                color = accumulation_[y * w + x];
+                color /= (float)index_;
+                data_[y * w + x] = convert(color);
+            }
         }
     }
 #endif
@@ -82,11 +86,20 @@ void Renderer::render(const Camera& camera, const Scene& scene) {
     }
 }
 
-Ray Renderer::pixel(uint32_t x, uint32_t y) {
-    Ray ray;
-    ray.origin = camera_->position;
-    ray.direction = camera_->rays[y * image_->width() + x];
-    ray.time = Random::Float();
+Ray Renderer::pixel(uint32_t x, uint32_t y, int s) {
+    glm::vec2 coord = {
+        (float)(x + s * (1.0f / (float)samples)) / (float)image_->width(),
+        (float)(y + s * (1.0f / (float)samples)) / (float)image_->height()
+    };
+    coord = coord * 2.0f - 1.0f; // [0, 1] -> [-1, 1]
+    glm::vec4 target = glm::inverse(camera_->projection) * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
+
+    Ray ray {
+        camera_->position,
+        glm::vec3(glm::inverse(camera_->view) * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0)),
+        Random::Float()
+    };
+
     return ray;
 }
 
@@ -108,6 +121,6 @@ glm::vec3 Renderer::traceRay(const Ray& ray, int depth) {
     }
 
     glm::vec3 color = traceRay(rayOut, depth - 1);
-    
+
     return attenuation * color;
 }

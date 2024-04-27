@@ -1,8 +1,12 @@
 #include "ray_tracing.hpp"
 #include "resources/material.hpp"
 #include "hittable/sphere.hpp"
+#include "hittable/bvh.hpp"
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 void RandomSpheres(Scene& scene) {
     std::shared_ptr<HittableList> world = std::make_shared<HittableList>();
@@ -20,7 +24,7 @@ void RandomSpheres(Scene& scene) {
     material = std::make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f);
     world->add(std::make_shared<Sphere>(glm::vec3(3.0f, 1.0f, 0.0f), 1.0f, material));
 
-    int n = 4;
+    int n = 5;
     for (int a = -n; a < n; a++) {
         for (int b = -n; b < n; b++) {
             auto type = Random::Float();
@@ -48,7 +52,8 @@ void RandomSpheres(Scene& scene) {
         }
     }
 
-    scene.world = std::move(world);
+    // scene.world = std::move(world);
+    scene.world = std::move(std::make_shared<HittableList>(std::move(std::make_shared<BVH>(world))));
 }
 
 RayTracing::RayTracing() : camera_(45.0f, 0.1f, 100.0f) {
@@ -57,6 +62,7 @@ RayTracing::RayTracing() : camera_(45.0f, 0.1f, 100.0f) {
             RandomSpheres(scene_);
             auto direction = glm::normalize(glm::vec3(-13.0f, -2.0f, -3.0f));
             setCamera(glm::vec3(13.0f, 2.0f, 3.0f), direction);
+            renderer_.samples = 4;
             renderer_.background = glm::vec3(0.7f, 0.8f, 1.0f);
             break;
         }
@@ -89,6 +95,14 @@ void RayTracing::render() {
         renderer_.reset();
     }
     ImGui::Separator();
+    ImGui::InputText("filename", filename_, 1024);
+    if (ImGui::Button("save image")) {
+        auto image = renderer_.image();
+        auto data = renderer_.data();
+        auto filename = "sandbox/ray_tracing/resources/images/" + std::string(filename_);
+        stbi_flip_vertically_on_write(true);
+        stbi_write_png(filename.c_str(), image->width(), image->height(), 4, data, 0);
+    }
     ImGui::End();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));

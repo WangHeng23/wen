@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <vector>
 
 class Camera {
 public:
@@ -15,10 +14,6 @@ public:
 
     glm::vec3 position;
     glm::vec3 direction;
-    std::vector<glm::vec3> rays;
-
-private:
-    void generateRay();
 
 private:
     uint32_t width_ = 0, height_ = 0;

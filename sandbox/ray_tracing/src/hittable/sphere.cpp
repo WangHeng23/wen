@@ -5,6 +5,7 @@ Sphere::Sphere(const glm::vec3& position, float radius, const std::shared_ptr<Ma
     this->position = position;
     this->radius = radius;
     this->material = material;
+    aabb = AABB(position - glm::vec3(radius), position + glm::vec3(radius));
 }
 
 Sphere::Sphere(const glm::vec3& src, const glm::vec3& dst, float radius, const std::shared_ptr<Material>& material) {
@@ -13,6 +14,10 @@ Sphere::Sphere(const glm::vec3& src, const glm::vec3& dst, float radius, const s
     this->direction = dst - src;
     this->radius = radius;
     this->material = material;
+    glm::vec3 rvec = glm::vec3(radius);
+    AABB box1(src - rvec, src + rvec);
+    AABB box2(dst - rvec, dst + rvec);
+    aabb = AABB(box1, box2);
 }
 
 bool Sphere::hit(const Ray& ray, Interval t, HitRecord& hitRecord) const {

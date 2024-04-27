@@ -73,7 +73,6 @@ bool Camera::update(float ts) {
 
     if (moved) {
         view = glm::lookAt(position, position + direction, glm::vec3(0.0f, 1.0f, 0.0f));
-        generateRay();
     }
 
     return moved;
@@ -89,20 +88,4 @@ void Camera::resize(uint32_t width, uint32_t height) {
 
     view = glm::lookAt(position, position + direction, glm::vec3(0.0f, 1.0f, 0.0f));
     projection = glm::perspectiveFov(glm::radians(fov_), (float)width_, (float)height_, near_, far_);
-    generateRay();
-}
-
-void Camera::generateRay() {
-    rays.resize(width_ * height_);
-
-    for (uint32_t y = 0; y < height_; y++) {
-        for (uint32_t x = 0; x < width_; x++) {
-            glm::vec2 coord = {(float)x / (float)width_, (float)y / (float)height_};
-            coord = coord * 2.0f - 1.0f;  // [0, 1] -> [-1, 1]
-
-            glm::vec4 target = glm::inverse(projection) * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
-            glm::vec3 ray = glm::vec3(glm::inverse(view) * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0));
-            rays[x + y * width_] = ray;
-        }
-    }
 }

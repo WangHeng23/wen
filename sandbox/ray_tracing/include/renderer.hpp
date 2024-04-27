@@ -17,16 +17,18 @@ public:
     void render(const Camera& camera, const Scene& scene);
 
     std::shared_ptr<Image> image() const { return image_; }
+    uint32_t* data() const { return data_; }
 
     int index() const { return index_; }
     bool& accumulated() { return accumulated_; }
     void reset() { index_ = 1; }
 
 public: 
+    int samples = 1;
     glm::vec3 background = glm::vec3(0.0f);
 
 private:
-    Ray pixel(uint32_t x, uint32_t y);
+    Ray pixel(uint32_t x, uint32_t y, int s);
     glm::vec3 traceRay(const Ray& ray, int depth);
 
 private:
