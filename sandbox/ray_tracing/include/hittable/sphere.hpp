@@ -14,4 +14,7 @@ public:
     glm::vec3 direction;
     float radius;
     std::shared_ptr<Material> material;
+
+private:
+    static void uv(const glm::vec3& point, float& u, float& v);
 };

@@ -10,6 +10,7 @@ public:
     bool inside;
     glm::vec3 normal;
     std::shared_ptr<Material> material;
+    float u, v;
 
     void setNormal(const Ray& ray, const glm::vec3& outward) {
         inside = glm::dot(ray.direction, outward) < 0;

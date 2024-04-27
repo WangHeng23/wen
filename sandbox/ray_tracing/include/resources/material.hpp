@@ -3,6 +3,7 @@
 #include "resources/ray.hpp"
 #include "hittable/hit_record.hpp"
 #include "tools/random.hpp"
+#include "resources/texture.hpp"
 
 class Material {
 public:
@@ -15,16 +16,17 @@ public:
 
 class Lambertian : public Material {
 public:
-    explicit Lambertian(const glm::vec3 albedo) : albedo(albedo) {}
+    explicit Lambertian(const glm::vec3& albedo) : albedo(std::make_shared<SolidColor>(albedo)) {}
+    explicit Lambertian(const std::shared_ptr<Texture>& albedo) : albedo(albedo) {}
 
     bool scatter(const Ray& rayIn, const HitRecord& hitRecord, glm::vec3& attenuation, Ray& rayOut) const override {
-        attenuation = albedo;
+        attenuation = albedo->value(hitRecord.u, hitRecord.v, hitRecord.point);
         glm::vec3 direction = hitRecord.normal + glm::normalize(Random::Vec3(-1.0f, 1.0f));
         rayOut = Ray(hitRecord.point, glm::normalize(direction), rayIn.time);
         return true; 
     }
 
-    glm::vec3 albedo;
+    std::shared_ptr<Texture> albedo;
 };
 
 class Metal : public Material {

@@ -13,6 +13,11 @@ public:
     float size() const { return max - min; }
     bool contains(float x) const { return min <= x && x <= max; }
     bool inside(float x) const { return min < x && x < max; }
+    float clamp(float x) const {
+        if (x < min) return min;
+        if (x > max) return max;
+        return x;
+    }
 
     Interval extend(float x) const { 
         return Interval(min - x * 0.5f, max + x * 0.5f);

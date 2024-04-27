@@ -1,4 +1,5 @@
 #include "hittable/sphere.hpp"
+#include <glm/ext/scalar_constants.hpp>
 
 Sphere::Sphere(const glm::vec3& position, float radius, const std::shared_ptr<Material>& material) {
     moving = false;
@@ -47,6 +48,15 @@ bool Sphere::hit(const Ray& ray, Interval t, HitRecord& hitRecord) const {
     glm::vec3 normal = (hitRecord.point - position) / radius;
     hitRecord.setNormal(ray, normal);
     hitRecord.material = material;
+    uv(normal, hitRecord.u, hitRecord.v);
 
     return true;
+}
+
+void Sphere::uv(const glm::vec3& point, float& u, float& v) {
+    float theta = acos(-point.y);
+    float phi = atan2(-point.z, point.x) + glm::pi<float>();
+
+    u = phi / (2.0f * glm::pi<float>());
+    v = theta / glm::pi<float>();
 }
