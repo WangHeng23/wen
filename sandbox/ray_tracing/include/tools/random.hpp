@@ -18,6 +18,7 @@ public:
         return min + (distribution(randomEngine) % (max - min + 1));
     }
 
+    // (0, 1)
     static float Float() {
         return (float)distribution(randomEngine) / (float)std::numeric_limits<uint32_t>::max();
     }

@@ -86,6 +86,7 @@ Ray Renderer::pixel(uint32_t x, uint32_t y) {
     Ray ray;
     ray.origin = camera_->position;
     ray.direction = camera_->rays[y * image_->width() + x];
+    ray.time = Random::Float();
     return ray;
 }
 
@@ -96,16 +97,17 @@ glm::vec3 Renderer::traceRay(const Ray& ray, int depth) {
 
     auto& world = scene_->world;
     HitRecord hitRecord;
-    if (world->hit(ray, Interval(0.001f, infinity), hitRecord)) {
-        Ray rayOut;
-        glm::vec3 attenuation;
-        if (hitRecord.material->scatter(ray, hitRecord, attenuation, rayOut)) {
-            return attenuation * traceRay(rayOut, depth - 1);
-        } else {
-            return glm::vec3(0.0f);
-        }
+    if (!world->hit(ray, Interval(0.001f, infinity), hitRecord)) {
+        return background;
     }
 
-    float a = 0.5 * (glm::normalize(ray.direction).y + 1.0);
-    return (1.0f - a) * glm::vec3(1.0f) + a * glm::vec3(0.5f, 0.7f, 1.0f);
+    Ray rayOut;
+    glm::vec3 attenuation;
+    if (!hitRecord.material->scatter(ray, hitRecord, attenuation, rayOut)) {
+        return glm::vec3(0.0f);
+    }
+
+    glm::vec3 color = traceRay(rayOut, depth - 1);
+    
+    return attenuation * color;
 }

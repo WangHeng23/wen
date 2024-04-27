@@ -7,7 +7,7 @@
 class RayTracing : public Layer {
 public:
     RayTracing();
-    ~RayTracing();
+    ~RayTracing() override;
 
     void update(float ts) override;
     void render() override;

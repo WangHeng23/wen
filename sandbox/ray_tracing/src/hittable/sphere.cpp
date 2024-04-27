@@ -1,13 +1,23 @@
 #include "hittable/sphere.hpp"
 
 Sphere::Sphere(const glm::vec3& position, float radius, const std::shared_ptr<Material>& material) {
+    moving = false;
     this->position = position;
     this->radius = radius;
     this->material = material;
 }
 
+Sphere::Sphere(const glm::vec3& src, const glm::vec3& dst, float radius, const std::shared_ptr<Material>& material) {
+    moving = true;
+    this->position = src;
+    this->direction = dst - src;
+    this->radius = radius;
+    this->material = material;
+}
+
 bool Sphere::hit(const Ray& ray, Interval t, HitRecord& hitRecord) const {
-    glm::vec3 origin = position - ray.origin;
+    glm::vec3 center = moving ? position + direction * ray.time : position;
+    glm::vec3 origin = center - ray.origin;
 
     float a = glm::dot(ray.direction, ray.direction);
     float h = glm::dot(ray.direction, origin);

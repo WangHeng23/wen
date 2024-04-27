@@ -7,7 +7,10 @@
 class Material {
 public:
     virtual ~Material() = default;
-    virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord, glm::vec3& attenuation, Ray& rayOut) const = 0;
+
+    virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord, glm::vec3& attenuation, Ray& rayOut) const {
+        return false;
+    }
 };
 
 class Lambertian : public Material {
@@ -17,7 +20,7 @@ public:
     bool scatter(const Ray& rayIn, const HitRecord& hitRecord, glm::vec3& attenuation, Ray& rayOut) const override {
         attenuation = albedo;
         glm::vec3 direction = hitRecord.normal + glm::normalize(Random::Vec3(-1.0f, 1.0f));
-        rayOut = Ray(hitRecord.point, glm::normalize(direction));
+        rayOut = Ray(hitRecord.point, glm::normalize(direction), rayIn.time);
         return true; 
     }
 
@@ -32,7 +35,7 @@ public:
         attenuation = albedo;
         glm::vec3 reflected = glm::reflect(glm::normalize(rayIn.direction), hitRecord.normal);
         auto direction = reflected + roughness * glm::normalize(Random::Vec3(-1.0f, 1.0f));
-        rayOut = Ray(hitRecord.point, glm::normalize(direction));
+        rayOut = Ray(hitRecord.point, glm::normalize(direction), rayIn.time);
         return glm::dot(rayOut.direction, hitRecord.normal) > 0;
     }
 
@@ -58,7 +61,7 @@ public:
             direction = glm::refract(unitDirection, hitRecord.normal, refractionRatio);
         }
 
-        rayOut = Ray(hitRecord.point, glm::normalize(direction));
+        rayOut = Ray(hitRecord.point, glm::normalize(direction), rayIn.time);
         return true;
     }
 

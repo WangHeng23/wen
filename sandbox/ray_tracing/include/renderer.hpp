@@ -22,6 +22,9 @@ public:
     bool& accumulated() { return accumulated_; }
     void reset() { index_ = 1; }
 
+public: 
+    glm::vec3 background = glm::vec3(0.0f);
+
 private:
     Ray pixel(uint32_t x, uint32_t y);
     glm::vec3 traceRay(const Ray& ray, int depth);

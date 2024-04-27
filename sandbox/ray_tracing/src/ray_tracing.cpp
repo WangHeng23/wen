@@ -28,9 +28,13 @@ void RandomSpheres(Scene& scene) {
 
             if ((center - glm::vec3(4, 0.2, 0)).length() > 0.9) {
                 if (type < 0.8) {
-                    auto albedo = Random::Vec3() * Random::Vec3();
-                    material = std::make_shared<Lambertian>(albedo);
-                    world->add(std::make_shared<Sphere>(center, 0.2, material));
+                    if (type < 0.6f) {
+                        material = std::make_shared<Lambertian>(Random::Vec3() * Random::Vec3());
+                        world->add(std::make_shared<Sphere>(center, center + glm::vec3(0.0f, Random::Float(0.0f, 0.5f), 0.0f), 0.2f, material));
+                    } else {
+                        material = std::make_shared<Lambertian>(Random::Vec3());
+                        world->add(std::make_shared<Sphere>(center, 0.2f, material));
+                    }
                 } else if (type < 0.9) {
                     auto albedo = Random::Vec3(0.5, 1);
                     auto roughness = Random::Float(0, 0.5);
@@ -53,6 +57,7 @@ RayTracing::RayTracing() : camera_(45.0f, 0.1f, 100.0f) {
             RandomSpheres(scene_);
             auto direction = glm::normalize(glm::vec3(-13.0f, -2.0f, -3.0f));
             setCamera(glm::vec3(13.0f, 2.0f, 3.0f), direction);
+            renderer_.background = glm::vec3(0.7f, 0.8f, 1.0f);
             break;
         }
     }
@@ -72,6 +77,8 @@ void RayTracing::render() {
     ImGui::DragFloat3("position", glm::value_ptr(camera_.position), 0.1f);
     ImGui::DragFloat3("direction", glm::value_ptr(camera_.direction), 0.1f);
     ImGui::Separator();
+    ImGui::SeparatorText("Renderer");
+    ImGui::ColorEdit3("background", glm::value_ptr(renderer_.background));
     ImGui::End();
 
     ImGui::Begin("Settings");
