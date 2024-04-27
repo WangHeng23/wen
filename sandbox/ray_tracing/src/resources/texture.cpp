@@ -67,3 +67,11 @@ const uint8_t* ImageTexture::pixels(int x, int y) const {
 
     return (uint8_t*)data_ + y * width_ * 4 + x * 4;
 }
+
+// NoiseTexture
+NoiseTexture::NoiseTexture(float scale) : scale_(scale) {}
+
+glm::vec3 NoiseTexture::value(float u, float v, const glm::vec3& hitPoint) const {
+    auto s = scale_ * hitPoint;
+    return glm::vec3(1.0f) * 0.5f * (1.0f + std::sin(s.z + 10.0f * noise_.turb(s, 7)));
+}

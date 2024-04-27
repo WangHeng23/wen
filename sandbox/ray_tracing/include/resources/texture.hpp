@@ -1,7 +1,6 @@
 #pragma once
 
-#include "image.hpp"
-#include <glm/glm.hpp>
+#include "resources/perlin.hpp"
 
 class Texture {
 public:
@@ -45,4 +44,16 @@ private:
 private:
     int width_, height_;
     void* data_;
+};
+
+class NoiseTexture : public Texture {
+public:
+    NoiseTexture() = default;
+    NoiseTexture(float scale);
+
+    glm::vec3 value(float u, float v, const glm::vec3& hitPoint) const override;
+
+private:
+    Perlin noise_;
+    float scale_;
 };

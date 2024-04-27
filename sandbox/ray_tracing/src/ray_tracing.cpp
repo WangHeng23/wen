@@ -34,7 +34,11 @@ void RandomSpheres(Scene& scene) {
     material = std::make_shared<Lambertian>(earth);
     world->add(std::make_shared<Sphere>(glm::vec3(7.0f, 1.0f, 0.0f), 1.0f, material));
 
-    int n = 4;
+    auto pertex = std::make_shared<NoiseTexture>(4.0f);
+    material = std::make_shared<Lambertian>(pertex);
+    world->add(std::make_shared<Sphere>(glm::vec3(3.0f, 1.0f, 2.5f), 1.0f, material));
+
+    int n = 8;
     for (int a = -n; a < n; a++) {
         for (int b = -n; b < n; b++) {
             auto type = Random::Float();
