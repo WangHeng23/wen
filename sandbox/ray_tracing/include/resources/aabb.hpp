@@ -15,6 +15,10 @@ public:
     const Interval& axis(int i) const;
     int longestAxis() const;
 
+    AABB operator+(const glm::vec3& offset) const {
+        return AABB(x + offset.x, y + offset.y, z + offset.z);
+    }
+
     Interval x, y, z;
     static const AABB empty, universe;
 

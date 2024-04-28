@@ -23,6 +23,10 @@ public:
         return Interval(min - x * 0.5f, max + x * 0.5f);
     }
 
+    Interval operator+(float x) const {
+        return Interval(min + x, max + x);
+    }
+
     float min, max;
     static const Interval empty, universe;
 };

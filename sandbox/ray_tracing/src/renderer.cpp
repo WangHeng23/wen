@@ -6,8 +6,11 @@
 #include <glm/glm.hpp>
 
 static uint32_t convert(glm::vec4 color) {
+    if (color.r != color.r) color.r = 0.0f;
+    if (color.g != color.g) color.g = 0.0f;
+    if (color.b != color.b) color.b = 0.0f;
     color = glm::sqrt(color);
-    color = glm::clamp(color, glm::vec4(0.001f), glm::vec4(0.999f));
+    color = glm::clamp(color, glm::vec4(0.000f), glm::vec4(0.999f));
     uint8_t r = static_cast<uint8_t>(color.r * 255.0f);
     uint8_t g = static_cast<uint8_t>(color.g * 255.0f);
     uint8_t b = static_cast<uint8_t>(color.b * 255.0f);
@@ -47,17 +50,21 @@ void Renderer::render(const Camera& camera, const Scene& scene) {
         memset(accumulation_, 0, image_->width() * image_->height() * sizeof(glm::vec4));
     }
 
+    sqrt_spp = int(glm::sqrt(samples)); 
+
 #define MT 1
 #if MT
     std::for_each(std::execution::par, vertical_.begin(), vertical_.end(), [&](uint32_t y) {
         std::for_each(std::execution::par, horizontal_.begin(), horizontal_.end(), [&](uint32_t x) {
-            for (int s = 0; s < samples; s++) {
-                Ray ray = pixel(x, y, s);
-                glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f) / (float)samples;
-                accumulation_[y * image_->width() + x] += color;
-                color = accumulation_[y * image_->width() + x];
-                color /= (float)index_;
-                data_[y * image_->width() + x] = convert(color);
+            for (int si = 0; si < sqrt_spp; si++) {
+                for (int sj = 0; sj < sqrt_spp; sj++) {
+                    Ray ray = pixel(x, y, si, sj);
+                    glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f) / (float)samples;
+                    accumulation_[y * image_->width() + x] += color;
+                    color = accumulation_[y * image_->width() + x];
+                    color /= (float)index_;
+                    data_[y * image_->width() + x] = convert(color);
+                }
             } 
          });
     });
@@ -65,14 +72,16 @@ void Renderer::render(const Camera& camera, const Scene& scene) {
     auto w = image_->width(), h = image_->height();
     for (uint32_t y = 0; y < h; y++) {
         for (uint32_t x = 0; x < w; x++) {
-            for (int s = 0; s < samples; s++) {
-                Ray ray = pixel(x, y, s);
-                glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f) / (float)samples;
-                accumulation_[y * w + x] += color;
-                color = accumulation_[y * w + x];
-                color /= (float)index_;
-                data_[y * w + x] = convert(color);
-            }
+            for (int si = 0; si < sqrt_spp; si++) {
+                for (int sj = 0; sj < sqrt_spp; sj++) {
+                    Ray ray = pixel(x, y, si, sj);
+                    glm::vec4 color = glm::vec4(traceRay(ray, 50), 1.0f) / (float)samples;
+                    accumulation_[y * image_->width() + x] += color;
+                    color = accumulation_[y * image_->width() + x];
+                    color /= (float)index_;
+                    data_[y * image_->width() + x] = convert(color);
+                }
+            } 
         }
     }
 #endif
@@ -86,10 +95,10 @@ void Renderer::render(const Camera& camera, const Scene& scene) {
     }
 }
 
-Ray Renderer::pixel(uint32_t x, uint32_t y, int s) {
+Ray Renderer::pixel(uint32_t x, uint32_t y, int si, int sj) {
     glm::vec2 coord = {
-        (float)(x + s * (1.0f / (float)samples)) / (float)image_->width(),
-        (float)(y + s * (1.0f / (float)samples)) / (float)image_->height()
+        (float)(x + si * (1.0f / (float)sqrt_spp)) / (float)image_->width(),
+        (float)(y + sj * (1.0f / (float)sqrt_spp)) / (float)image_->height()
     };
     coord = coord * 2.0f - 1.0f; // [0, 1] -> [-1, 1]
     glm::vec4 target = glm::inverse(camera_->projection) * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
@@ -108,19 +117,25 @@ glm::vec3 Renderer::traceRay(const Ray& ray, int depth) {
         return glm::vec3(0.0f);
     }
 
+    glm::vec3 color = glm::vec3(0.0f);
+
     auto& world = scene_->world;
     HitRecord hitRecord;
     if (!world->hit(ray, Interval(0.001f, infinity), hitRecord)) {
         return background;
     }
 
+    glm::vec3 emitted = hitRecord.material->emitted(hitRecord);
+    color += emitted;
+
     Ray rayOut;
     glm::vec3 attenuation;
     if (!hitRecord.material->scatter(ray, hitRecord, attenuation, rayOut)) {
-        return glm::vec3(0.0f);
+        return color;
     }
 
-    glm::vec3 color = traceRay(rayOut, depth - 1);
+    glm::vec3 scattered = attenuation * traceRay(rayOut, depth - 1);
+    color += scattered;
 
-    return attenuation * color;
+    return color;
 }

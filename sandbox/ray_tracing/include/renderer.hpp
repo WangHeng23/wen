@@ -25,10 +25,11 @@ public:
 
 public: 
     int samples = 1;
+    int sqrt_spp = 1;
     glm::vec3 background = glm::vec3(0.0f);
 
 private:
-    Ray pixel(uint32_t x, uint32_t y, int s);
+    Ray pixel(uint32_t x, uint32_t y, int si, int sj);
     glm::vec3 traceRay(const Ray& ray, int depth);
 
 private:

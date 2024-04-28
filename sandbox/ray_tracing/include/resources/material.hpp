@@ -12,6 +12,10 @@ public:
     virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord, glm::vec3& attenuation, Ray& rayOut) const {
         return false;
     }
+
+    virtual glm::vec3 emitted(const HitRecord& hitRecord) const {
+        return glm::vec3(0.0f);
+    }
 };
 
 class Lambertian : public Material {
@@ -73,4 +77,33 @@ public:
         r0 = r0 * r0;
         return r0 + (1 - r0) * pow((1 - cosTheta), 5);
     }
+};
+
+class DiffuseLight : public Material {
+public:
+    DiffuseLight(const glm::vec3& emit) : emit(std::make_shared<SolidColor>(emit)) {}
+    DiffuseLight(const std::shared_ptr<Texture>& emit) : emit(emit) {}
+
+    glm::vec3 emitted(const HitRecord& hitRecord) const override {
+        if (!hitRecord.inside) {
+            return glm::vec3(0.0f);
+        }
+        return emit->value(hitRecord.u, hitRecord.v, hitRecord.point);
+    }
+
+    std::shared_ptr<Texture> emit;
+};
+
+class Isotropic : public Material {
+public:
+    Isotropic(const glm::vec3& albedo) : albedo(std::make_shared<SolidColor>(albedo)) {}
+    Isotropic(const std::shared_ptr<Texture>& albedo) : albedo(albedo) {}
+
+    bool scatter(const Ray& rayIn, const HitRecord& hitRecord, glm::vec3& attenuation, Ray& rayOut) const override {
+        attenuation = albedo->value(hitRecord.u, hitRecord.v, hitRecord.point);
+        rayOut = Ray(hitRecord.point, glm::normalize(Random::Vec3(-1.0f, 1.0f)), rayIn.time);
+        return true;
+    }
+
+    std::shared_ptr<Texture> albedo;
 };
