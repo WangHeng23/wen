@@ -36,6 +36,15 @@ public:
         return glm::vec3(Float() * (max - min) + min, Float() * (max - min) + min, Float() * (max - min) + min);
     }
 
+    static glm::vec3 UnitSphere() {
+        while (true) {
+            auto unit = glm::vec3(2.0f * Float() - 1.0f, 2.0f * Float() - 1.0f, 2.0f * Float() - 1.0f);
+            if (glm::dot(unit, unit) < 1) {
+                return glm::normalize(unit);
+            }
+        }
+    }
+
     static thread_local std::mt19937 randomEngine;
     static std::uniform_int_distribution<std::mt19937::result_type> distribution;
 };

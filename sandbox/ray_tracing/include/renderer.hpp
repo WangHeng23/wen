@@ -6,6 +6,7 @@
 
 struct Scene {
     std::shared_ptr<HittableList> world;
+    std::shared_ptr<HittableList> lights;
 };
 
 class Renderer {

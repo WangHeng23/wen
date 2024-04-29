@@ -9,6 +9,7 @@ Quad::Quad(const glm::vec3& Q, const glm::vec3& u, const glm::vec3& v, const std
     normal = glm::normalize(n);
     D = glm::dot(normal, Q);
     w = n / glm::dot(n, n);
+    area = glm::length(n);
     aabb = AABB(Q, Q + u + v);
 }
 
@@ -47,4 +48,18 @@ bool Quad::isInterior(float a, float b, HitRecord& hitRecord) {
     hitRecord.u = a;
     hitRecord.v = b;
     return true;
+}
+
+float Quad::pdfValue(const glm::vec3& origin, const glm::vec3& direction) const {
+    HitRecord hitRecord;
+    if (!hit(Ray(origin, direction), Interval(0.001f, infinity), hitRecord)) {
+        return 0.0f;
+    }
+    float distance2 = hitRecord.t * hitRecord.t * glm::dot(direction, direction);
+    float cosTheta = glm::abs(glm::dot(direction, hitRecord.normal)) / glm::length(direction);
+    return distance2 / (cosTheta * area);
+}
+
+glm::vec3 Quad::random(const glm::vec3& origin) const {
+    return Q + u * Random::Float() + v * Random::Float() - origin;
 }

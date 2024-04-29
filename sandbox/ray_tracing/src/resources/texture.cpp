@@ -1,4 +1,4 @@
-#include "resources/texture.hpp"
+#include "resources/textures.hpp"
 #include "tools/interval.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION

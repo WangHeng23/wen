@@ -1,7 +1,7 @@
 #include "tools/random.hpp"
 #include "tools/interval.hpp"
 
-thread_local std::mt19937 Random::randomEngine;
+thread_local std::mt19937 Random::randomEngine = std::mt19937(std::random_device()());
 std::uniform_int_distribution<std::mt19937::result_type> Random::distribution;
 
 const Interval Interval::empty = Interval(+infinity, -infinity);

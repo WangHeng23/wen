@@ -117,8 +117,6 @@ glm::vec3 Renderer::traceRay(const Ray& ray, int depth) {
         return glm::vec3(0.0f);
     }
 
-    glm::vec3 color = glm::vec3(0.0f);
-
     auto& world = scene_->world;
     HitRecord hitRecord;
     if (!world->hit(ray, Interval(0.001f, infinity), hitRecord)) {
@@ -126,16 +124,30 @@ glm::vec3 Renderer::traceRay(const Ray& ray, int depth) {
     }
 
     glm::vec3 emitted = hitRecord.material->emitted(hitRecord);
-    color += emitted;
 
-    Ray rayOut;
-    glm::vec3 attenuation;
-    if (!hitRecord.material->scatter(ray, hitRecord, attenuation, rayOut)) {
-        return color;
+    ScatterRecord scatterRecord;
+    if (!hitRecord.material->scatter(ray, hitRecord, scatterRecord)) {
+        return emitted;
     }
 
-    glm::vec3 scattered = attenuation * traceRay(rayOut, depth - 1);
-    color += scattered;
+    glm::vec3 scattered;
 
-    return color;
+    if (!scene_->lights) {
+        scattered = scatterRecord.attenuation * traceRay(scatterRecord.rayOut, depth - 1);
+        return emitted + scattered;
+    } 
+
+    if (!scatterRecord.pdf) {
+        scattered = scatterRecord.attenuation * traceRay(scatterRecord.rayOut, depth - 1);
+        return scattered;
+    }
+
+    auto light = std::make_shared<HittablePDF>(scene_->lights, hitRecord.point);
+    MixturePDF mixture(light, scatterRecord.pdf);
+    Ray rayOut(hitRecord.point, glm::normalize(mixture.generate()), ray.time);
+    float pdfValue = mixture.value(rayOut.direction);
+    float pdf = hitRecord.material->pdf(hitRecord, rayOut);
+    scattered = (scatterRecord.attenuation * pdf * traceRay(rayOut, depth - 1)) / pdfValue;
+
+    return emitted + scattered;
 }

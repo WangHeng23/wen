@@ -214,8 +214,46 @@ void FinalScene(Scene& scene) {
     scene.world = std::move(world);
 }
 
+void Life(Scene& scene) {
+    std::shared_ptr<HittableList> world = std::make_shared<HittableList>();
+    std::shared_ptr<HittableList> lights = std::make_shared<HittableList>();
+
+    auto red = std::make_shared<Lambertian>(glm::vec3(0.65f, 0.05f, 0.05f));
+    auto white = std::make_shared<Lambertian>(glm::vec3(0.73f, 0.73f, 0.73f));
+    auto green = std::make_shared<Lambertian>(glm::vec3(0.12f, 0.45f, 0.15f));
+    auto light = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
+
+    // Cornell box sides
+    world->add(std::make_shared<Quad>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(0.0f, 555.0f, 0.0f), green));
+    world->add(std::make_shared<Quad>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(0.0f, 0.0f, -555.0f), glm::vec3(0.0f, 555.0f, 0.0f), red));
+    world->add(std::make_shared<Quad>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 555.0f), white));
+    world->add(std::make_shared<Quad>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -555.0f), white));
+    world->add(std::make_shared<Quad>(glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(-555.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 0.0f), white));
+
+    // Light
+    world->add(std::make_shared<Quad>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(130.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 105.0f), light));
+
+    // Box1
+    auto aluminum = std::make_shared<Metal>(glm::vec3(0.8f, 0.85f, 0.88f), 0.0f);
+    std::shared_ptr<Hittable> box1 = box(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(165.0f, 330.0f, 165.0f), white);
+    box1 = std::make_shared<Rotate>(box1, 15);
+    box1 = std::make_shared<Translate>(box1, glm::vec3(265.0f, 0.0f, 295.0f));
+    world->add(box1);
+
+    // Glass sphere
+    world->add(std::make_shared<Sphere>(glm::vec3(190.0f, 90.0f, 190.0f), 90.0f, std::make_shared<Dielectric>(1.5f)));
+
+    // Light Sources
+    auto m = std::shared_ptr<Material>();
+    lights->add(std::make_shared<Quad>(glm::vec3(343.0f, 554.0f, 332.0f), glm::vec3(-130.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -105.0f), m));
+    lights->add(std::make_shared<Sphere>(glm::vec3(190.0f, 90.0f, 190.0f), 90.0f, m));
+    
+    scene.world = std::move(world);
+    scene.lights = std::move(lights);
+}
+
 RayTracing::RayTracing() : camera_(45.0f, 0.1f, 100.0f) {
-    switch (3) {
+    switch (4) {
         case 1: {
             RandomSpheres(scene_);
             auto direction = glm::normalize(glm::vec3(-13.0f, -2.0f, -3.0f));
@@ -236,6 +274,13 @@ RayTracing::RayTracing() : camera_(45.0f, 0.1f, 100.0f) {
             auto direction = glm::normalize(glm::vec3(-200.0f, 0.0f, 600.0f));
             setCamera(glm::vec3(478.0f, 278.0f, -600.0f), direction);
             renderer_.samples = 4;
+            break;
+        }
+        case 4: {
+            Life(scene_);
+            auto direction = glm::normalize(glm::vec3(0.0f, 0.0f, 800.0f));
+            setCamera(glm::vec3(278, 278, -800), direction);
+            renderer_.samples = 1;
             break;
         }
     }
