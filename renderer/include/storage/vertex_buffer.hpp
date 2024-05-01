@@ -4,10 +4,10 @@
 
 namespace wen {
 
-class VertexBuffer {
+class VertexBuffer : public StorageBuffer {
 public:
     VertexBuffer(uint32_t size, uint32_t count, vk::BufferUsageFlags additionalUsage);
-    ~VertexBuffer();
+    ~VertexBuffer() override;
 
     void* map();
     void flush();
@@ -22,7 +22,9 @@ public:
         return offset + data.size();
     }
 
-    std::unique_ptr<Buffer>& getBuffer() { return buffer_; }
+    vk::Buffer getBuffer(uint32_t inFlight = 0) override { return buffer_->getBuffer(); }
+    uint64_t getSize() override { return buffer_->getSize(); }
+    void* getData() override { return buffer_->getData(); }
 
 private:
     std::unique_ptr<Buffer> staging_;

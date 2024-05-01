@@ -11,7 +11,8 @@ Attachment::Attachment(const vk::AttachmentDescription& description, vk::ImageUs
         description.format,
         usage,
         description.samples,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
+        VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
     );
     if (aspect == (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)) {
         aspect = vk::ImageAspectFlagBits::eDepth;

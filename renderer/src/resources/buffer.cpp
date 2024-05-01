@@ -1,50 +1,49 @@
 #include "resources/buffer.hpp"
-#include "utils/utils.hpp"
 #include "manager.hpp"
 
 namespace wen {
 
-Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
-    : size(size), mapped_(false), data(nullptr) {
+Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, VmaMemoryUsage vmaUsage, VmaAllocationCreateFlags vmaFlags)
+    : size_(size), mapped_(false), data_(nullptr) {
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = vmaUsage;
+    allocInfo.flags = vmaFlags;
+
     vk::BufferCreateInfo createInfo = {};
-    createInfo.setSize(size)
-              .setUsage(usage)
-              .setSharingMode(vk::SharingMode::eExclusive);
-    buffer = manager->device->device.createBuffer(createInfo);
+    createInfo.size = size;
+    createInfo.usage = usage;
 
-    vk::MemoryRequirements requirements = manager->device->device.getBufferMemoryRequirements(buffer);
-    uint32_t memoryTypeIndex = findMemoryType(requirements.memoryTypeBits, properties);
-    vk::MemoryAllocateInfo allocateInfo = {};
-    allocateInfo.setAllocationSize(requirements.size)
-                .setMemoryTypeIndex(memoryTypeIndex);
-    memory_ = manager->device->device.allocateMemory(allocateInfo);
-
-    //! offset
-    manager->device->device.bindBufferMemory(buffer, memory_, 0);
+    vmaCreateBuffer(
+        manager->vmaAllocator,
+        reinterpret_cast<VkBufferCreateInfo*>(&createInfo),
+        &allocInfo,
+        reinterpret_cast<VkBuffer*>(&buffer_),
+        &allocation_,
+        nullptr
+    );
 }
 
 void* Buffer::map() {
     if (mapped_) {
-        return data;
+        return data_;
     }
     mapped_ = true;
-    //! offset
-    data = manager->device->device.mapMemory(memory_, 0, size);
-    return data;
+    vmaMapMemory(manager->vmaAllocator, allocation_, &data_);
+    return data_;
 }
 
 void Buffer::unmap() {
     if (!mapped_) {
         return;
     }
-    manager->device->device.unmapMemory(memory_);
-    data = nullptr;
+    vmaUnmapMemory(manager->vmaAllocator, allocation_);
+    data_ = nullptr;
     mapped_ = false;
 }
 
 Buffer::~Buffer() {
-    manager->device->device.freeMemory(memory_);
-    manager->device->device.destroyBuffer(buffer);
+    unmap();
+    vmaDestroyBuffer(manager->vmaAllocator, buffer_, allocation_);
 }
 
 } // namespace wen

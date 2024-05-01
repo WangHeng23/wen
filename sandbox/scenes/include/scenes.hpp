@@ -18,6 +18,7 @@ public:
     virtual void destroy() = 0;
 
 protected:
+    bool isEnableRayTracing = false;
     std::shared_ptr<wen::Interface> interface;
     std::shared_ptr<wen::Renderer> renderer;
     std::shared_ptr<wen::ImGuiLayer> imguiLayer;

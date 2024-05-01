@@ -129,7 +129,8 @@ DataTexture::DataTexture(const uint8_t* data, uint32_t width, uint32_t height, u
     Buffer stagingBuffer(
         size,
         vk::BufferUsageFlagBits::eTransferSrc,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+        VMA_MEMORY_USAGE_CPU_TO_GPU,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT
     );
     memcpy(stagingBuffer.map(), data, size);
     stagingBuffer.unmap();
@@ -144,7 +145,8 @@ DataTexture::DataTexture(const uint8_t* data, uint32_t width, uint32_t height, u
         vk::Format::eR8G8B8A8Srgb,
         vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
         vk::SampleCountFlagBits::e1,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
         mipLevels
     );
 
@@ -164,7 +166,7 @@ DataTexture::DataTexture(const uint8_t* data, uint32_t width, uint32_t height, u
         }
     );
 
-    copyBufferToImage(stagingBuffer.buffer, image_->image, width, height);
+    copyBufferToImage(stagingBuffer.getBuffer(), image_->image, width, height);
     generateMipmaps(image_->image, vk::Format::eR8G8B8A8Srgb, width, height, mipLevels);
 
     imageView_ = createImageView(image_->image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, mipLevels);

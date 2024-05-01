@@ -42,6 +42,9 @@ public:
 
     // msaa
     SampleCount msaaSamples = SampleCount::e1;
+
+    // ray tracing
+    bool isEnableRayTracing = false;
 };
 
 extern std::shared_ptr<Settings> settings;

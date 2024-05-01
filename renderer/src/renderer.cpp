@@ -212,11 +212,28 @@ void Renderer::bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipel
     pushConstants(renderPipeline);
 }
 
+void Renderer::bindResources(std::shared_ptr<RayTracingRenderPipeline> renderPipeline) {
+    currentBuffer_.bindPipeline(bindPoint_, renderPipeline->pipeline);
+
+    if (!renderPipeline->descriptorSets.empty()) {
+        std::vector<vk::DescriptorSet> sets;
+        for (auto& descriptorSet : renderPipeline->descriptorSets) {
+            sets.push_back(descriptorSet.value()->descriptorSets_[currentInFlight_]);
+        }
+        currentBuffer_.bindDescriptorSets(bindPoint_, renderPipeline->pipelineLayout, 0, sets, {});
+    }
+
+    if (renderPipeline->pushConstants.has_value()) {
+        auto pushConstants = renderPipeline->pushConstants.value();
+        currentBuffer_.pushConstants(renderPipeline->pipelineLayout, pushConstants->range_.stageFlags, 0, pushConstants->size_, pushConstants->constants_.data());
+    }
+}
+
 void Renderer::bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding) {
     std::vector<vk::Buffer> buffers;
     std::vector<vk::DeviceSize> offsets;
     for (const auto& vertexBuffer : vertexBuffers) {
-        buffers.push_back(vertexBuffer->getBuffer()->buffer);
+        buffers.push_back(vertexBuffer->getBuffer());
         offsets.push_back(0);
     }
     currentBuffer_.bindVertexBuffers(firstBinding, buffers, offsets);
@@ -227,7 +244,7 @@ void Renderer::bindVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffe
 }
 
 void Renderer::bindIndexBuffer(const std::shared_ptr<IndexBuffer>& indexBuffer) {
-    currentBuffer_.bindIndexBuffer(indexBuffer->getBuffer()->buffer, 0, indexBuffer->indexType);
+    currentBuffer_.bindIndexBuffer(indexBuffer->getBuffer(), 0, indexBuffer->indexType);
 }
 
 void Renderer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
@@ -244,6 +261,16 @@ void Renderer::drawModel(const std::shared_ptr<Model>& model, uint32_t instanceC
 
 void Renderer::drawMesh(const std::shared_ptr<Mesh>& mesh, uint32_t instanceCount, uint32_t firstInstance) {
     currentBuffer_.drawIndexed(mesh->indices.size(), instanceCount, mesh->offset.index, mesh->offset.vertex, firstInstance);
+}
+
+void Renderer::traceRays(const std::shared_ptr<RayTracingRenderPipeline>& renderPipeline, uint32_t width, uint32_t height, uint32_t depth) {
+    currentBuffer_.traceRaysKHR(
+        renderPipeline->raygenRegion_,
+        renderPipeline->missRegion_,
+        renderPipeline->hitRegion_,
+        {}, width, height, depth,
+        manager->dispatcher
+    );
 }
 
 void Renderer::nextSubpass() {

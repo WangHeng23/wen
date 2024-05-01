@@ -2,6 +2,7 @@
 
 #include "storage/vertex_buffer.hpp"
 #include "storage/index_buffer.hpp"
+#include "ray_tracing/ray_tracing_model.hpp"
 #include <glm/glm.hpp>
 
 namespace wen {
@@ -30,10 +31,10 @@ public:
     std::vector<uint32_t> indices;
 };
 
-class Model {
+class Model : public RayTracingModel {
 public:
     Model(const std::string& filename);
-    ~Model();
+    ~Model() override;
 
     uint32_t vertexCount;
     uint32_t indexCount;
@@ -44,6 +45,10 @@ public:
     Offset upload(std::shared_ptr<VertexBuffer> vertexBuffer,
                   std::shared_ptr<IndexBuffer> indexBuffer,
                   Offset offset = {0, 0});
+    
+    ModelType getType() const override { return ModelType::eNormalModel; }
+    std::unique_ptr<Buffer> vertexBuffer;
+    std::unique_ptr<Buffer> indexBuffer;
 
 private:
     std::vector<Vertex> vertices_;

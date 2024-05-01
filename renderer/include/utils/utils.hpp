@@ -34,4 +34,7 @@ vk::Format findDepthFormat();
 
 SampleCount getMaxUsableSampleCount();
 
+vk::DeviceAddress getBufferAddress(vk::Buffer buffer);
+vk::DeviceAddress getAccelerationStructureAddress(vk::AccelerationStructureKHR as);
+
 } // namespace wen

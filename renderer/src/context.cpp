@@ -30,11 +30,17 @@ void Context::quit() {
 
 void Context::initialize() {
     createVkInstance();
+    if (settings->isEnableRayTracing) {
+        vk::DynamicLoader dl;
+        auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        dispatcher = vk::DispatchLoaderDynamic(vkInstance, vkGetInstanceProcAddr);
+    }
     createSurface();
     device = std::make_unique<Device>();
     swapchain = std::make_unique<Swapchain>();
     commandPool = std::make_unique<CommandPool>(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
     descriptorPool = std::make_unique<DescriptorPool>();
+    initVMA();
     WEN_INFO("Vulkan Context Initialized!");
 }
 
@@ -70,22 +76,22 @@ void Context::createVkInstance() {
     }
     info.setPEnabledExtensionNames(extensions);
 
+    const char* layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor"};
     if (settings->debug) {
-        const char* layer[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor"};
         auto La = vk::enumerateInstanceLayerProperties();
         bool found0 = false, found1 = false;
         for (const auto& la : La) {
-            if (strcmp(la.layerName, layer[0]) == 0) {
+            if (strcmp(la.layerName, layers[0]) == 0) {
                 found0 = true;
             }
         }
         for (const auto& la : La) {
-            if (strcmp(la.layerName, layer[1]) == 0) {
+            if (strcmp(la.layerName, layers[1]) == 0) {
                 found1 = true;
             }
         }
         if (found0 && found1) {
-            info.setPEnabledLayerNames(layer);
+            info.setPEnabledLayerNames(layers);
         } else {
             WEN_ERROR("Validation layer or/and Monitor layer not support!")
         }
@@ -104,6 +110,18 @@ void Context::createSurface() {
     this->surface = vk::SurfaceKHR(surface);
 }
 
+void Context::initVMA() {
+    VmaAllocatorCreateInfo createInfo = {};
+    if (settings->isEnableRayTracing) {
+        createInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    }
+    createInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    createInfo.instance = vkInstance;
+    createInfo.physicalDevice = device->physicalDevice;
+    createInfo.device = device->device;
+    vmaCreateAllocator(&createInfo, &vmaAllocator);
+}
+
 void Context::recreateSwapchain() {
     int width = 0, height = 0;
     GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(window->getWindow());
@@ -117,6 +135,7 @@ void Context::recreateSwapchain() {
 }
 
 void Context::destroy() {
+    vmaDestroyAllocator(vmaAllocator);
     descriptorPool.reset();
     commandPool.reset();
     swapchain.reset();

@@ -15,6 +15,7 @@ public:
     virtual ~RenderPipeline();
 
 protected:
+    vk::PipelineShaderStageCreateInfo createShaderStage(vk::ShaderStageFlagBits stage, vk::ShaderModule module, const std::string& entry);
     void createPipelineLayout();
 
 public:

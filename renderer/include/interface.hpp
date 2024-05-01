@@ -15,6 +15,11 @@
 #include "resources/sampler.hpp"
 #include "storage/push_constants.hpp"
 #include "resources/model.hpp"
+#include "storage/storage_image.hpp"
+#include "ray_tracing/shader_program.hpp"
+#include "ray_tracing/render_pipeline.hpp"
+#include "ray_tracing/acceleration_structure.hpp"
+#include "ray_tracing/ray_tracing_instance.hpp"
 
 namespace wen {
 
@@ -38,6 +43,11 @@ public:
     std::shared_ptr<Sampler> createSampler(const SamplerInfos& infos = {});
     std::shared_ptr<PushConstants> createPushConstants(ShaderStages stages, const std::vector<PushConstantInfo>& infos);
     std::shared_ptr<Model> loadModel(const std::string& filename);
+    std::shared_ptr<StorageImage> createStorageImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageUsageFlags additionalUsage = {});
+    std::shared_ptr<RayTracingShaderProgram> createRayTracingShaderProgram();
+    std::shared_ptr<RayTracingRenderPipeline> createRayTracingRenderPipeline(std::shared_ptr<RayTracingShaderProgram> shaderProgram);
+    std::shared_ptr<AccelerationStructure> createAccelerationStructure();
+    std::shared_ptr<RayTracingInstance> createRayTracingInstance(bool allow_update = true);
 
 private:
     std::string path_;

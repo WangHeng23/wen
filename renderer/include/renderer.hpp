@@ -6,6 +6,7 @@
 #include "storage/vertex_buffer.hpp"
 #include "storage/index_buffer.hpp"
 #include "resources/model.hpp"
+#include "ray_tracing/render_pipeline.hpp"
 
 namespace wen {
 
@@ -37,6 +38,7 @@ public:
     void bindDescriptorSets(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline);
     void pushConstants(const std::shared_ptr<GraphicsRenderPipeline>& renderPipeline);
     void bindResources(std::shared_ptr<GraphicsRenderPipeline> renderPipeline);
+    void bindResources(std::shared_ptr<RayTracingRenderPipeline> renderPipeline);
     void bindVertexBuffers(const std::vector<std::shared_ptr<VertexBuffer>>& vertexBuffers, uint32_t firstBinding = 0);
     void bindVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffer, uint32_t binding = 0);
     void bindIndexBuffer(const std::shared_ptr<IndexBuffer>& indexBuffer);
@@ -44,6 +46,7 @@ public:
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);
     void drawModel(const std::shared_ptr<Model>& model, uint32_t instanceCount, uint32_t firstInstance);
     void drawMesh(const std::shared_ptr<Mesh>& mesh, uint32_t instanceCount, uint32_t firstInstance);
+    void traceRays(const std::shared_ptr<RayTracingRenderPipeline>& renderPipeline, uint32_t width, uint32_t height, uint32_t depth);
 
     void nextSubpass();
     void nextSubpass(const std::string& name);

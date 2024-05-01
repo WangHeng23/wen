@@ -149,4 +149,87 @@ void DescriptorSet::bindInputAttachment(uint32_t binding, const std::shared_ptr<
     bindInputAttachments(binding, renderer, {{name, sampler}});
 }
 
+void DescriptorSet::bindStorageBuffers(uint32_t binding, const std::vector<std::shared_ptr<StorageBuffer>>& storageBuffers) {
+    auto layoutBinding = getLayoutBinding(binding);
+    if (layoutBinding.descriptorType != vk::DescriptorType::eStorageBuffer) {
+        WEN_ERROR("binding {} is not stroage buffer descriptor!", binding);
+    }
+    assert(layoutBinding.descriptorCount == storageBuffers.size());
+    for (uint32_t i = 0; i < settings->maxFramesInFlight; i++) {
+        std::vector<vk::DescriptorBufferInfo> infos(layoutBinding.descriptorCount);
+        for (uint32_t j = 0; j < layoutBinding.descriptorCount; j++) {
+            infos[j].setBuffer(storageBuffers[j]->getBuffer(i))
+                    .setOffset(0)
+                    .setRange(storageBuffers[j]->getSize());
+        }
+        vk::WriteDescriptorSet write = {};
+        write.setDstSet(descriptorSets_[i])
+             .setDstBinding(layoutBinding.binding)
+             .setDstArrayElement(0)
+             .setDescriptorType(layoutBinding.descriptorType)
+             .setBufferInfo(infos);
+        manager->device->device.updateDescriptorSets({write}, {});
+    }
+}
+
+void DescriptorSet::bindStorageBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer) {
+    bindStorageBuffers(binding, {storageBuffer});
+}
+
+void DescriptorSet::bindStorageImages(uint32_t binding, const std::vector<std::shared_ptr<StorageImage>>& storageImages) {
+    auto layoutBinding = getLayoutBinding(binding);
+    if (layoutBinding.descriptorType != vk::DescriptorType::eStorageImage) {
+        WEN_ERROR("binding {} is not stroage image descriptor!", binding);
+    }
+    assert(layoutBinding.descriptorCount == storageImages.size());
+    for (uint32_t i = 0; i < settings->maxFramesInFlight; i++) {
+        std::vector<vk::DescriptorImageInfo> infos(layoutBinding.descriptorCount);
+        for (uint32_t j = 0; j < layoutBinding.descriptorCount; j++) {
+            infos[j].setImageLayout(storageImages[j]->getImageLayout())
+                    .setImageView(storageImages[j]->getImageView());
+        }
+        vk::WriteDescriptorSet write = {};
+        write.setDstSet(descriptorSets_[i])
+             .setDstBinding(layoutBinding.binding)
+             .setDstArrayElement(0)
+             .setDescriptorType(layoutBinding.descriptorType)
+             .setImageInfo(infos);
+        manager->device->device.updateDescriptorSets({write}, {});
+    }
+}
+
+void DescriptorSet::bindStorageImage(uint32_t binding, std::shared_ptr<StorageImage> storageImage) {
+    bindStorageImages(binding, {storageImage});
+}
+
+void DescriptorSet::bindAccelerationStructures(uint32_t binding, const std::vector<std::shared_ptr<RayTracingInstance>>& instances) {
+    auto layoutBinding = getLayoutBinding(binding);
+    if (layoutBinding.descriptorType != vk::DescriptorType::eAccelerationStructureKHR) {
+        WEN_ERROR("binding {} is not acceleration structure descriptor!", binding);
+    }
+    assert(layoutBinding.descriptorCount == instances.size());
+    for (uint32_t i = 0; i < settings->maxFramesInFlight; i++) {
+        std::vector<vk::AccelerationStructureKHR> as;
+        as.reserve(instances.size());
+        for (auto& instance : instances) {
+            as.push_back(instance->tlas());
+        }
+        vk::WriteDescriptorSetAccelerationStructureKHR writeAs = {};
+        writeAs.setAccelerationStructureCount(as.size())
+               .setAccelerationStructures(as);
+        vk::WriteDescriptorSet write = {};
+        write.setDstSet(descriptorSets_[i])
+             .setDstBinding(layoutBinding.binding)
+             .setDstArrayElement(0)
+             .setDescriptorType(layoutBinding.descriptorType)
+             .setDescriptorCount(writeAs.accelerationStructureCount)
+             .setPNext(&writeAs);
+        manager->device->device.updateDescriptorSets({write}, {});
+    }
+}
+
+void DescriptorSet::bindAccelerationStructure(uint32_t binding, std::shared_ptr<RayTracingInstance> instance) {
+    bindAccelerationStructures(binding, {instance});
+}
+
 } // namespace wen

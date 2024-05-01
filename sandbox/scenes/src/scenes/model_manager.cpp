@@ -95,7 +95,11 @@ void ModelManager::imgui() {
     ImGui::Text("(%.1f FPS)", ImGui::GetIO().Framerate);
     ImGui::Separator();
 
-    static const char* filenames[] = {"mori_knob.obj", "dragon.obj", "bunny.obj", "teapot.obj", "Red.obj", "sportsCar.obj"};
+    static const char* filenames[] = {
+        "mori_knob.obj", "dragon.obj", "bunny.obj",
+        "teapot.obj", "Red.obj", "sportsCar.obj",
+        "nanosuit.obj",
+    };
     static int idx = 0;
     ImGui::Combo("模型文件名", &idx, filenames, IM_ARRAYSIZE(filenames));
 

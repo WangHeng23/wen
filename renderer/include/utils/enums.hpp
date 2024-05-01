@@ -246,13 +246,17 @@ enum class FrontFace {
 enum class ShaderStage : uint32_t {
     eVertex = static_cast<uint32_t>(vk::ShaderStageFlagBits::eVertex),
     eFragment = static_cast<uint32_t>(vk::ShaderStageFlagBits::eFragment),
+    eRaygen = static_cast<uint32_t>(vk::ShaderStageFlagBits::eRaygenKHR),
+    eMiss = static_cast<uint32_t>(vk::ShaderStageFlagBits::eMissKHR),
+    eClosestHit = static_cast<uint32_t>(vk::ShaderStageFlagBits::eClosestHitKHR),
+    eIntersection = static_cast<uint32_t>(vk::ShaderStageFlagBits::eIntersectionKHR),
 };
 
 using ShaderStages = Flags<ShaderStage>;
 template <>
 struct FlagTraits<ShaderStage> {
     static VULKAN_HPP_CONST_OR_CONSTEXPR bool isBitmask = true;
-    static VULKAN_HPP_CONST_OR_CONSTEXPR ShaderStages allFlags = ShaderStage::eVertex | ShaderStage::eFragment;
+    static VULKAN_HPP_CONST_OR_CONSTEXPR ShaderStages allFlags = ShaderStage::eVertex | ShaderStage::eFragment | ShaderStage::eRaygen | ShaderStage::eMiss | ShaderStage::eClosestHit;
 };
 
 enum class InputRate {
@@ -282,6 +286,9 @@ enum class DescriptorType {
     eUniform,
     eTexture,
     eInputAttachment,
+    eStorageBuffer,
+    eStorageImage,
+    eAccelerationStructure,
 };
 
 enum class SamplerFilter {

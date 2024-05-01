@@ -7,6 +7,20 @@
 
 namespace wen {
 
+vk::PipelineShaderStageCreateInfo RenderPipeline::createShaderStage(
+    vk::ShaderStageFlagBits stage,
+    vk::ShaderModule module,
+    const std::string& entry
+) {
+    vk::PipelineShaderStageCreateInfo info = {};
+    info.setPSpecializationInfo(nullptr)
+        .setStage(stage)
+        .setModule(module)
+        .setPName(entry.c_str());
+
+    return info;
+}
+
 void RenderPipeline::createPipelineLayout() {
     vk::PipelineLayoutCreateInfo info = {};
 
@@ -42,20 +56,6 @@ GraphicsRenderPipeline::GraphicsRenderPipeline(std::weak_ptr<Renderer> renderer,
 
 GraphicsRenderPipeline::~GraphicsRenderPipeline() {
     shaderProgram_.reset();
-}
-
-static vk::PipelineShaderStageCreateInfo createShaderStage(
-    vk::ShaderStageFlagBits stage,
-    vk::ShaderModule module,
-    const std::string& entry
-) {
-    vk::PipelineShaderStageCreateInfo info = {};
-    info.setPSpecializationInfo(nullptr)
-        .setStage(stage)
-        .setModule(module)
-        .setPName(entry.c_str());
-
-    return info;
 }
 
 void GraphicsRenderPipeline::setVertexInput(std::shared_ptr<VertexInput> vertexInput) {

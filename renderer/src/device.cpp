@@ -69,7 +69,37 @@ Device::Device() {
     // extensions
     std::map<std::string, bool> requiredExtensions = {
         {VK_KHR_SWAPCHAIN_EXTENSION_NAME, false},
+        {VK_KHR_BIND_MEMORY_2_EXTENSION_NAME, false},
     };
+    vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
+    vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
+    vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {};
+    if (settings->isEnableRayTracing) {
+        requiredExtensions.insert(std::make_pair(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, false));
+        requiredExtensions.insert(std::make_pair(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, false));
+        requiredExtensions.insert(std::make_pair(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false));
+        requiredExtensions.insert(std::make_pair(VK_KHR_RAY_QUERY_EXTENSION_NAME, false));
+        accelerationStructureFeatures.accelerationStructure = true;
+        accelerationStructureFeatures.accelerationStructureCaptureReplay = true;
+        accelerationStructureFeatures.accelerationStructureIndirectBuild = false;
+        accelerationStructureFeatures.accelerationStructureHostCommands = false;
+        accelerationStructureFeatures.descriptorBindingAccelerationStructureUpdateAfterBind = true;
+        rayTracingPipelineFeatures.rayTracingPipeline = true;
+        rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay = false;
+        rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplayMixed = false;
+        rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect = true;
+        rayTracingPipelineFeatures.rayTraversalPrimitiveCulling = true;
+        rayQueryFeatures.rayQuery = true;
+        deviceCreateInfo.setPNext(
+            &accelerationStructureFeatures.setPNext(
+                &rayTracingPipelineFeatures.setPNext(
+                    &rayQueryFeatures.setPNext(
+                        &vk12Features
+                    )
+                )
+            )
+        );
+    }
     for (uint32_t i = 0; i < settings->deviceRequestedExtensions.size(); i++) {
         requiredExtensions.insert(std::make_pair(settings->deviceRequestedExtensions[i], false));
     }
@@ -92,8 +122,8 @@ Device::Device() {
     deviceCreateInfo.setPEnabledExtensionNames(extensions);
 
     // layers
+    const char* layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor"};
     if (settings->debug) {
-        const char* layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor"};
         deviceCreateInfo.setPEnabledLayerNames(layers);
     }
 
@@ -117,6 +147,16 @@ Device::Device() {
     presentQueue = device.getQueue(presentQueueFamilyIndex, 0);
     transferQueue = device.getQueue(transferQueueFamilyIndex, 0);
     computeQueue = device.getQueue(computeQueueFamilyIndex, 0);
+
+    if (settings->isEnableRayTracing) {
+        vk::PhysicalDeviceProperties2 properties = {};
+        vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties = {};
+        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties = {};
+        properties.pNext = &accelerationStructureProperties;
+        accelerationStructureProperties.pNext = &rayTracingPipelineProperties;
+        physicalDevice.getProperties2(&properties);
+        WEN_INFO("Max Ray Recursion Depth: {}", rayTracingPipelineProperties.maxRayRecursionDepth);
+    }
 }
 
 Device::~Device() {

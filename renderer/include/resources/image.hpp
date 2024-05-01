@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
 
 namespace wen {
 
@@ -11,13 +12,16 @@ public:
         vk::Format format,
         vk::ImageUsageFlags usage,
         vk::SampleCountFlagBits samples,
-        vk::MemoryPropertyFlags properties,
+        VmaMemoryUsage vmaUsage,
+        VmaAllocationCreateFlags vmaFlags,
         uint32_t mipLevels = 1
     );
     ~Image();
 
     vk::Image image;
-    vk::DeviceMemory memory;
+
+private:
+    VmaAllocation allocation_;
 };
 
 } // namespace wen

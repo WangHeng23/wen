@@ -92,4 +92,24 @@ std::shared_ptr<Model> Interface::loadModel(const std::string& filename) {
     return std::make_shared<Model>(modelDir_ + filename);
 }
 
+std::shared_ptr<StorageImage> Interface::createStorageImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageUsageFlags additionalUsage) {
+    return std::make_shared<StorageImage>(width, height, format, additionalUsage);
+}
+
+std::shared_ptr<RayTracingShaderProgram> Interface::createRayTracingShaderProgram() {
+    return std::make_shared<RayTracingShaderProgram>();
+}
+
+std::shared_ptr<RayTracingRenderPipeline> Interface::createRayTracingRenderPipeline(std::shared_ptr<RayTracingShaderProgram> shaderProgram) {
+    return std::make_shared<RayTracingRenderPipeline>(shaderProgram);
+}
+
+std::shared_ptr<AccelerationStructure> Interface::createAccelerationStructure() {
+    return std::make_shared<AccelerationStructure>();
+}
+
+std::shared_ptr<RayTracingInstance> Interface::createRayTracingInstance(bool allow_update) {
+    return std::make_shared<RayTracingInstance>(allow_update);
+}
+
 } // namespace wen

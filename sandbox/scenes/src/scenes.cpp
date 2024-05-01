@@ -6,7 +6,9 @@ void SceneManager::update() {
 
 void SceneManager::render() {
     scene_->renderer->acquireNextImage();
-    scene_->renderer->beginRenderPass();
+    if (!scene_->isEnableRayTracing) {
+        scene_->renderer->beginRenderPass();
+    }
 
     scene_->render();
     scene_->imguiLayer->begin();

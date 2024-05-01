@@ -17,18 +17,9 @@ public:
 class Material {
 public:
     virtual ~Material() = default;
-
-    virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord, ScatterRecord& scatterRecord) const {
-        return false;
-    }
-
-    virtual glm::vec3 emitted(const HitRecord& hitRecord) const {
-        return glm::vec3(0.0f);
-    }
-
-    virtual float pdf(const HitRecord& hitRecord, const Ray& rayOut) const {
-        return 0.0f;
-    }
+    virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord, ScatterRecord& scatterRecord) const = 0;
+    virtual glm::vec3 emitted(const HitRecord& hitRecord) const = 0;
+    virtual float pdf(const HitRecord& hitRecord, const Ray& rayOut) const = 0;
 };
 
 class Lambertian : public Material {
@@ -43,6 +34,10 @@ public:
         auto direction = hitRecord.normal + Random::UnitSphere();
         scatterRecord.rayOut = Ray(hitRecord.point, direction, rayIn.time);
         return true; 
+    }
+
+    glm::vec3 emitted(const HitRecord& hitRecord) const override {
+        return glm::vec3(0.0f);
     }
 
     float pdf(const HitRecord& hitRecord, const Ray& rayOut) const override {
@@ -62,9 +57,17 @@ public:
         scatterRecord.pdf = nullptr;
 
         glm::vec3 reflected = glm::reflect(glm::normalize(rayIn.direction), hitRecord.normal);
-        auto direction = reflected + roughness * glm::normalize(Random::Vec3(-1.0f, 1.0f));
+        auto direction = reflected + roughness * Random::UnitSphere();
         scatterRecord.rayOut = Ray(hitRecord.point, glm::normalize(direction), rayIn.time);
         return true;
+    }
+
+    glm::vec3 emitted(const HitRecord& hitRecord) const override {
+        return glm::vec3(0.0f);
+    }
+
+    float pdf(const HitRecord& hitRecord, const Ray& rayOut) const override {
+        return 0.0f;
     }
 
     glm::vec3 albedo;
@@ -95,6 +98,14 @@ public:
         return true;
     }
 
+    glm::vec3 emitted(const HitRecord& hitRecord) const override {
+        return glm::vec3(0.0f);
+    }
+
+    float pdf(const HitRecord& hitRecord, const Ray& rayOut) const override {
+        return 0.0f;
+    }
+
     float ir;
     static double reflectance(float cosTheta, float ir) {
         auto r0 = (1 - ir) / (1 + ir);
@@ -108,11 +119,19 @@ public:
     DiffuseLight(const glm::vec3& emit) : emit(std::make_shared<SolidColor>(emit)) {}
     DiffuseLight(const std::shared_ptr<Texture>& emit) : emit(emit) {}
 
+    bool scatter(const Ray& rayIn, const HitRecord& hitRecord, ScatterRecord& scatterRecord) const override {
+        return false;
+    }
+
     glm::vec3 emitted(const HitRecord& hitRecord) const override {
         if (!hitRecord.inside) {
             return glm::vec3(0.0f);
         }
         return emit->value(hitRecord.u, hitRecord.v, hitRecord.point);
+    }
+
+    float pdf(const HitRecord& hitRecord, const Ray& rayOut) const override {
+        return 0.0f;
     }
 
     std::shared_ptr<Texture> emit;
@@ -127,9 +146,13 @@ public:
         scatterRecord.attenuation = albedo->value(hitRecord.u, hitRecord.v, hitRecord.point);
         scatterRecord.pdf = std::make_shared<SpherePDF>();
 
-        auto dircetion = Random::Vec3(-1.0f, 1.0f);
-        scatterRecord.rayOut = Ray(hitRecord.point, glm::normalize(dircetion), rayIn.time); 
+        auto dircetion = Random::UnitSphere();
+        scatterRecord.rayOut = Ray(hitRecord.point, dircetion, rayIn.time); 
         return true;
+    }
+
+    glm::vec3 emitted(const HitRecord& hitRecord) const override {
+        return glm::vec3(0.0f);
     }
 
     float pdf(const HitRecord& hitRecord, const Ray& rayOut) const override {

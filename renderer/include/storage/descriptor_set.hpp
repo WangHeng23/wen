@@ -4,6 +4,8 @@
 #include "storage/uniform_buffer.hpp"
 #include "resources/texture.hpp"
 #include "resources/sampler.hpp"
+#include "storage/storage_image.hpp"
+#include "ray_tracing/ray_tracing_instance.hpp"
 
 namespace wen {
 
@@ -45,6 +47,12 @@ public:
     void bindTexture(uint32_t binding, std::shared_ptr<Texture> texture, std::shared_ptr<Sampler> sampler);
     void bindInputAttachments(uint32_t binding, const std::shared_ptr<Renderer>& renderer, const std::vector<std::pair<std::string, std::shared_ptr<Sampler>>>& names_samplers);
     void bindInputAttachment(uint32_t binding, const std::shared_ptr<Renderer>& renderer, const std::string& name, std::shared_ptr<Sampler> sampler);
+    void bindStorageBuffers(uint32_t binding, const std::vector<std::shared_ptr<StorageBuffer>>& storageBuffers);
+    void bindStorageBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer);
+    void bindStorageImages(uint32_t binding, const std::vector<std::shared_ptr<StorageImage>>& storageImages);
+    void bindStorageImage(uint32_t binding, std::shared_ptr<StorageImage> storageImage);
+    void bindAccelerationStructures(uint32_t binding, const std::vector<std::shared_ptr<RayTracingInstance>>& instances);
+    void bindAccelerationStructure(uint32_t binding, std::shared_ptr<RayTracingInstance> instance);
 
 private:
     const vk::DescriptorSetLayoutBinding& getLayoutBinding(uint32_t binding);

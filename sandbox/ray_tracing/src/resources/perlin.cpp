@@ -4,7 +4,7 @@
 Perlin::Perlin() {
     ranvec_ = new glm::vec3[pointCount_];
     for (int i = 0; i < pointCount_; i++) {
-        ranvec_[i] = glm::normalize(Random::Vec3(-1.0f, 1.0f));
+        ranvec_[i] = Random::UnitSphere();
     }
 
     permX_ = perlinGenerate();

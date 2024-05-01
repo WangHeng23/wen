@@ -1,5 +1,4 @@
 #include "resources/image.hpp"
-#include "utils/utils.hpp"
 #include "manager.hpp"
 
 namespace wen {
@@ -9,9 +8,14 @@ Image::Image(
     vk::Format format,
     vk::ImageUsageFlags usage,
     vk::SampleCountFlagBits samples,
-    vk::MemoryPropertyFlags properties,
+    VmaMemoryUsage vmaUsage,
+    VmaAllocationCreateFlags vmaFlags,
     uint32_t mipLevels
 ) {
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = vmaUsage;
+    allocInfo.flags = vmaFlags;
+
     vk::ImageCreateInfo createInfo = {};
     createInfo.setImageType(vk::ImageType::e2D)
               .setExtent({width, height, 1})
@@ -22,21 +26,19 @@ Image::Image(
               .setUsage(usage)
               .setSamples(samples)
               .setInitialLayout(vk::ImageLayout::eUndefined);
-    image = manager->device->device.createImage(createInfo);
 
-    vk::MemoryRequirements requirements = manager->device->device.getImageMemoryRequirements(image);
-    uint32_t memoryTypeIndex = findMemoryType(requirements.memoryTypeBits, properties);
-    vk::MemoryAllocateInfo allocInfo = {};
-    allocInfo.setAllocationSize(requirements.size)
-             .setMemoryTypeIndex(memoryTypeIndex);
-    memory = manager->device->device.allocateMemory(allocInfo);
-
-    manager->device->device.bindImageMemory(image, memory, 0);
+    vmaCreateImage(
+        manager->vmaAllocator,
+        reinterpret_cast<VkImageCreateInfo*>(&createInfo),
+        &allocInfo,
+        reinterpret_cast<VkImage*>(&image),
+        &allocation_,
+        nullptr
+    );
 }
 
 Image::~Image() {
-    manager->device->device.freeMemory(memory);
-    manager->device->device.destroyImage(image);
+    vmaDestroyImage(manager->vmaAllocator, image, allocation_);
 }
 
 } // namespace wen

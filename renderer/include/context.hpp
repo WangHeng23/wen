@@ -6,6 +6,7 @@
 #include "command_pool.hpp"
 #include "descriptor_pool.hpp"
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
 
 namespace wen {
 
@@ -26,16 +27,19 @@ public:
     void recreateSwapchain();
 
 public:
+    vk::DispatchLoaderDynamic dispatcher;
     vk::Instance vkInstance;
     vk::SurfaceKHR surface;
     std::unique_ptr<Device> device;
     std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<CommandPool> commandPool;
     std::unique_ptr<DescriptorPool> descriptorPool;
+    VmaAllocator vmaAllocator;
 
 private:
     void createVkInstance();
     void createSurface();
+    void initVMA();
 
 private:
     Context();

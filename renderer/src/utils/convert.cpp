@@ -1,6 +1,7 @@
 #include "utils/utils.hpp"
 #include "utils/enums.hpp"
 #include "core/logger.hpp"
+#include <glm/glm.hpp>
 
 namespace wen {
 
@@ -177,6 +178,9 @@ vk::DescriptorType convert<vk::DescriptorType>(DescriptorType type) {
         case DescriptorType::eUniform: return vk::DescriptorType::eUniformBuffer;
         case DescriptorType::eTexture: return vk::DescriptorType::eCombinedImageSampler;
         case DescriptorType::eInputAttachment: return vk::DescriptorType::eInputAttachment;
+        case DescriptorType::eStorageBuffer: return vk::DescriptorType::eStorageBuffer;
+        case DescriptorType::eStorageImage: return vk::DescriptorType::eStorageImage;
+        case DescriptorType::eAccelerationStructure: return vk::DescriptorType::eAccelerationStructureKHR;
     }
 }
 
@@ -234,6 +238,14 @@ vk::SampleCountFlagBits convert<vk::SampleCountFlagBits>(SampleCount count) {
         case SampleCount::e32: return vk::SampleCountFlagBits::e32;
         case SampleCount::e64: return vk::SampleCountFlagBits::e64;
     }
+}
+
+template <>
+vk::TransformMatrixKHR convert<vk::TransformMatrixKHR>(const glm::mat4 &matrix) {
+    vk::TransformMatrixKHR result;
+    auto matrix_t = glm::transpose(matrix);
+    memcpy(&result, &matrix_t, sizeof(vk::TransformMatrixKHR));
+    return result;
 }
 
 } // namespace wen

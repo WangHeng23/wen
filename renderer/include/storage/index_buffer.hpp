@@ -6,10 +6,10 @@
 
 namespace wen {
 
-class IndexBuffer {
+class IndexBuffer : public StorageBuffer {
 public:
     IndexBuffer(IndexType type, uint32_t count, vk::BufferUsageFlags additionalUsage);
-    ~IndexBuffer();
+    ~IndexBuffer() override;
 
     void* map();
     void flush();
@@ -24,7 +24,9 @@ public:
         return offset + data.size();
     }
 
-    std::unique_ptr<Buffer>& getBuffer() { return buffer_; }
+    vk::Buffer getBuffer(uint32_t inFlight = 0) override { return buffer_->getBuffer(); }
+    uint64_t getSize() override { return buffer_->getSize(); }
+    void* getData() override { return buffer_->getData(); }
 
 public:
     vk::IndexType indexType;
