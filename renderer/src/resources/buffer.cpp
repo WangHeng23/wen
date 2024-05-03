@@ -4,7 +4,7 @@
 namespace wen {
 
 Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, VmaMemoryUsage vmaUsage, VmaAllocationCreateFlags vmaFlags)
-    : size_(size), mapped_(false), data_(nullptr) {
+    : size(size), mapped_(false), data(nullptr) {
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = vmaUsage;
     allocInfo.flags = vmaFlags;
@@ -17,7 +17,7 @@ Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, VmaMemoryUsage vmaUsag
         manager->vmaAllocator,
         reinterpret_cast<VkBufferCreateInfo*>(&createInfo),
         &allocInfo,
-        reinterpret_cast<VkBuffer*>(&buffer_),
+        reinterpret_cast<VkBuffer*>(&buffer),
         &allocation_,
         nullptr
     );
@@ -25,11 +25,11 @@ Buffer::Buffer(uint64_t size, vk::BufferUsageFlags usage, VmaMemoryUsage vmaUsag
 
 void* Buffer::map() {
     if (mapped_) {
-        return data_;
+        return data;
     }
     mapped_ = true;
-    vmaMapMemory(manager->vmaAllocator, allocation_, &data_);
-    return data_;
+    vmaMapMemory(manager->vmaAllocator, allocation_, &data);
+    return data;
 }
 
 void Buffer::unmap() {
@@ -37,13 +37,13 @@ void Buffer::unmap() {
         return;
     }
     vmaUnmapMemory(manager->vmaAllocator, allocation_);
-    data_ = nullptr;
+    data = nullptr;
     mapped_ = false;
 }
 
 Buffer::~Buffer() {
     unmap();
-    vmaDestroyBuffer(manager->vmaAllocator, buffer_, allocation_);
+    vmaDestroyBuffer(manager->vmaAllocator, buffer, allocation_);
 }
 
 } // namespace wen

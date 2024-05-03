@@ -25,10 +25,10 @@ void* VertexBuffer::map() {
 void VertexBuffer::flush() {
     auto cmdbuf = manager->commandPool->allocateSingleUse();
     vk::BufferCopy regions = {};
-    regions.setSize(staging_->getSize())
+    regions.setSize(staging_->size)
            .setSrcOffset(0)
            .setDstOffset(0);
-    cmdbuf.copyBuffer(staging_->getBuffer(), buffer_->getBuffer(), regions);
+    cmdbuf.copyBuffer(staging_->buffer, buffer_->buffer, regions);
     manager->commandPool->freeSingleUse(cmdbuf);
 }
 

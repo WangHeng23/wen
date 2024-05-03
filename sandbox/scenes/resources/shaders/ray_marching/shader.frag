@@ -1,14 +1,14 @@
 #version 450
 
-layout (location = 0) out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
-layout (binding = 0) uniform CameraUniform {
+layout(binding = 0) uniform CameraUniform {
     vec3 position;
     mat4 view;
     mat4 project;
 } camera;
 
-layout (binding = 1) uniform RayMatching {
+layout(binding = 1) uniform RayMatching {
     vec2 windowSize;
     int maxSteps;
     float maxDist;

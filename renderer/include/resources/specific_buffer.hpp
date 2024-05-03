@@ -4,10 +4,10 @@
 
 namespace wen {
 
-class StorageBuffer {
+class SpecificBuffer {
 public:
-    StorageBuffer() = default;
-    virtual ~StorageBuffer() = default;
+    SpecificBuffer() = default;
+    virtual ~SpecificBuffer() = default;
     virtual vk::Buffer getBuffer(uint32_t inFlight = 0) = 0;
     virtual uint64_t getSize() = 0;
     virtual void* getData() = 0;

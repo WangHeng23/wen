@@ -20,7 +20,7 @@ int main() {
     wen::logger->setLevel(wen::Logger::Level::info);
 
     auto& context = wen::initializeRenderer();
-    wen::settings->setSampleCount(wen::SampleCount::e1);
+    wen::settings->setSampleCount(wen::SampleCount::e64);
     auto interface = context.createInterface("./sandbox/scenes/resources");
 
     auto sceneManager = new SceneManager(interface);

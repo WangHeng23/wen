@@ -2,12 +2,12 @@
 
 layout(binding = 0) uniform sampler2D image;
 
-layout (binding = 0, set = 1) uniform Info {
+layout(binding = 0, set = 1) uniform Info {
     vec2 windowSize;
     vec3 clearColor;
 } info;
 
-layout (location = 0) out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     vec2 uv = gl_FragCoord.xy / info.windowSize;

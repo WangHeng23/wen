@@ -5,11 +5,6 @@
 
 namespace wen {
 
-ModelAccelerationStructure::~ModelAccelerationStructure() {
-    manager->device->device.destroyAccelerationStructureKHR(blas, nullptr, manager->dispatcher);
-    buffer.reset();
-}
-
 AccelerationStructure::~AccelerationStructure() {
     staging_.reset();
     scratch_.reset();
@@ -39,19 +34,24 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
         flags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
     }
 
+    // 将模型转变成光追几何体用于构建底层加速结构
     for (auto& model : models_) {
         if (!is_update) {
             uint64_t verticesSize = model->vertexCount * sizeof(Vertex);
             uint64_t indicesSize = model->indexCount * sizeof(uint32_t);
-            model->vertexBuffer = std::make_unique<Buffer>(
+            model->rayTracingVertexBuffer = std::make_unique<Buffer>(
                 verticesSize,
+                // 将数据或显存从其他缓冲区复制到此缓冲区
                 vk::BufferUsageFlagBits::eTransferDst |
+                    // 用于加速结构的只读输入
                     vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
+                    // 用于在着色器中获取这个缓冲的地址来访问数据
                     vk::BufferUsageFlagBits::eShaderDeviceAddress,
                 VMA_MEMORY_USAGE_GPU_ONLY,
+                // 为此次分配创建专用的内存
                 VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
             );
-            model->indexBuffer = std::make_unique<Buffer>(
+            model->rayTracingIndexBuffer = std::make_unique<Buffer>(
                 indicesSize,
                 vk::BufferUsageFlagBits::eTransferDst |
                     vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
@@ -64,31 +64,34 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
             model->modelAs = std::make_unique<ModelAccelerationStructure>();
         }
 
-        auto& info = infos.emplace_back(*model->modelAs.value());
+        auto& info = infos.emplace_back(*(model->modelAs.value()));
         uint32_t maxPrimitiveCount = model->indexCount / 3;
 
-        // Describe buffer as array of VertexObj.
+        // 将缓存描述为 VertexObj
         info.geometryDatas.emplace_back().triangles
-            // vec3 vertex position data.
+            // 顶点的位置数据 : glm::vec3
             .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-            .setVertexData(getBufferAddress(model->vertexBuffer->getBuffer()))
+            // 顶点数据的原内存地址
+            .setVertexData(getBufferAddress(model->rayTracingVertexBuffer->buffer))
+            // 顶点数据的偏移
             .setVertexStride(sizeof(Vertex))
-            // Describe index data (32-bit unsigned int)
+            // 索引数据 : uint32_t
             .setIndexType(vk::IndexType::eUint32)
-            .setIndexData(getBufferAddress(model->indexBuffer->getBuffer()))
+            .setIndexData(getBufferAddress(model->rayTracingIndexBuffer->buffer))
             .setMaxVertex(model->vertexCount - 1)
             .sType = vk::StructureType::eAccelerationStructureGeometryTrianglesDataKHR;
-        // Identify the above data as containing opaque triangles.
+        // 将三角形设置为不透明
         info.geometries.emplace_back()
             .setGeometry(info.geometryDatas[0])
             .setGeometryType(vk::GeometryTypeKHR::eTriangles)
             .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-        // The entire array will be used to build the BLAS.
+        // 设置偏移
         info.offsets.emplace_back()
             .setFirstVertex(0)
             .setPrimitiveCount(maxPrimitiveCount)
             .setPrimitiveOffset(0)
             .setTransformOffset(0);
+        // 设置构建信息
         info.build
             .setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
             .setMode(mode)
@@ -101,41 +104,41 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
         maxScratchSize = std::max(maxScratchSize, is_update ? info.size.updateScratchSize : info.size.buildScratchSize);
     }
 
-    // Create staging and scratch buffers if needed.
+    // create staging and scratch buffers if needed.
     if (maxStagingSize > currentStagingSize_) {
         staging_.reset();
-        staging_ = std::make_unique<Buffer>(
+        staging_ = std::make_unique<StorageBuffer>(
             maxStagingSize,
+            // 可以将这个缓冲区的数据复制到其他缓冲区或显存
             vk::BufferUsageFlagBits::eTransferSrc,
             VMA_MEMORY_USAGE_CPU_TO_GPU,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT
+            // 在CPU端对分配的内存进行顺序写入
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+                // 允许使用传输队列执行传输操作
+                VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT
         );
         currentStagingSize_ = maxStagingSize;
     }
     if (maxScratchSize > currentScratchSize_) {
         scratch_.reset();
-        scratch_ = std::make_unique<Buffer>(
+        scratch_ = std::make_unique<StorageBuffer>(
             maxScratchSize,
+            // 存储缓冲区是一种特殊类型的缓冲区，它可以在着色器中被读写
             vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer,
             VMA_MEMORY_USAGE_GPU_ONLY,
             VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
         );
+        currentScratchSize_ = maxScratchSize;
     }
 
-    // Copy vertex and index data to staging buffer.
+    // upload data to gpu
     if (!is_update) {
         for (auto& model : models_) {
             auto* ptr = static_cast<uint8_t*>(staging_->map());
 
             uint64_t verticesSize = model->vertexCount * sizeof(Vertex);
             memcpy(ptr, model->vertices().data(), verticesSize);
-            auto cmdbuf = manager->commandPool->allocateSingleUse();
-            vk::BufferCopy copy{};
-            copy.setSrcOffset(0)
-                .setDstOffset(0)
-                .setSize(verticesSize);
-            cmdbuf.copyBuffer(staging_->getBuffer(), model->vertexBuffer->getBuffer(), copy);
-            manager->commandPool->freeSingleUse(cmdbuf);
+            staging_->flush(verticesSize, model->rayTracingVertexBuffer->buffer);
 
             uint64_t indicesSize = 0;
             for (const auto& [name, mesh] : model->meshes()) {
@@ -144,59 +147,59 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                 ptr += size;
                 indicesSize += size;
             }
-            cmdbuf = manager->commandPool->allocateSingleUse();
-            copy.setSize(indicesSize);
-            cmdbuf.copyBuffer(staging_->getBuffer(), model->indexBuffer->getBuffer(), copy);
-            manager->commandPool->freeSingleUse(cmdbuf);
+            staging_->flush(indicesSize, model->rayTracingIndexBuffer->buffer);
         }
         if (staging_.get() != nullptr) {
             staging_->unmap();
         }
     }
 
-    // Create query pool to get compacted size of BLAS.
+    // 创建一个用于获取每一个BLAS压缩的存储大小的查询队列
     vk::QueryPoolCreateInfo info = {};
     info.setQueryCount(infos.size())
         .setQueryType(vk::QueryType::eAccelerationStructureCompactedSizeKHR);
     auto queryPool = manager->device->device.createQueryPool(info);
 
-    // Batching creation/compaction of BLAS to allow staying in restricted amount of memory
-    std::vector<uint32_t> buildInfoIndices;
+    // 批量创建/压缩底层加速结构，这样可以存入有限的内存
+    std::vector<uint32_t> indices;
     vk::DeviceSize batchSize = {0};
     vk::DeviceSize batchLimit = {256'000'000}; // 256 MB
     for (int i = 0; i < infos.size(); i++) {
-        buildInfoIndices.push_back(i);
+        // indices数组用于限值一次性创建底层加速结构的数量
+        indices.push_back(i);
         batchSize += infos[i].size.accelerationStructureSize;
-        // Over the limit or last BLAS element
+        // 超过256MB或是最后一个底层加速结构
         if (batchSize > batchLimit || i == infos.size() - 1) {
             auto cmdbuf = manager->commandPool->allocateSingleUse();
             cmdbuf.resetQueryPool(queryPool, 0, infos.size());
             if (!is_update) {
                 uint32_t index = 0;
-                for (auto j : buildInfoIndices) {
+                for (auto j : indices) {
                     auto& info = infos[j];
-                    // Actual allocation of buffer and acceleration structure.
-                    info.buffer = std::make_unique<Buffer>(
+                    // 真正的缓存分配和加速结构创建
+                    info.buffer = std::make_unique<StorageBuffer>(
                         info.size.accelerationStructureSize,
+                        // 可以将这个缓冲区的数据用于存储加速结构的数据
                         vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
                             vk::BufferUsageFlagBits::eShaderDeviceAddress,
                         VMA_MEMORY_USAGE_GPU_ONLY,
                         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
                     );
-                    vk::AccelerationStructureCreateInfoKHR createInfo{};
+                    vk::AccelerationStructureCreateInfoKHR createInfo = {};
                     createInfo.setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
                               .setBuffer(info.buffer->getBuffer())
+                              // 将用于内存分配
                               .setSize(info.size.accelerationStructureSize);
                     info.as = manager->device->device.createAccelerationStructureKHR(createInfo, nullptr, manager->dispatcher);
 
+                    // 构建底层加速结构
                     info.build
                         .setDstAccelerationStructure(info.as)
                         .setScratchData(getBufferAddress(scratch_->getBuffer()));
-
-                    // Building the bottom-level-acceleration-structure
                     cmdbuf.buildAccelerationStructuresKHR(info.build, info.offsets.data(), manager->dispatcher);
 
-                    vk::MemoryBarrier barrier{};
+                    // 一旦暂付缓存被重复使用, 我们需要一个栅栏用于确保之前的构建已经结束才开始构建下一个
+                    vk::MemoryBarrier barrier = {};
                     barrier.setSrcAccessMask(vk::AccessFlagBits::eAccelerationStructureWriteKHR)
                            .setDstAccessMask(vk::AccessFlagBits::eAccelerationStructureReadKHR);
                     cmdbuf.pipelineBarrier(
@@ -207,7 +210,7 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                         {},
                         {}
                     );
-                    // Add a query to find the 'real' amount of memory needed, use for compaction
+                    // 查询真正需要的内存数量，用于压缩
                     cmdbuf.writeAccelerationStructuresPropertiesKHR(
                         info.as,
                         vk::QueryType::eAccelerationStructureCompactedSizeKHR,
@@ -217,7 +220,14 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                 }
                 manager->commandPool->freeSingleUse(cmdbuf);
 
-                // Get the compacted size result back
+                /*
+                    大体上来说，压缩流程如下：
+                    1. 获取查询到的数据（压缩大小）
+                    2. 使用较小的大小创建一个新的加速结构
+                    3. 将之前的加速结构拷贝到新创建的加速结构中
+                    4. 将之前的加速结构销毁
+                */
+                // 获取查询到的数据（压缩大小）
                 std::vector<vk::DeviceSize> compactSizes(infos.size());
                 auto res = manager->device->device.getQueryPoolResults(
                     queryPool,
@@ -232,25 +242,25 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                 
                 cmdbuf = manager->commandPool->allocateSingleUse();
                 index = 0;
-                for (auto j : buildInfoIndices) {
+                for (auto j : indices) {
                     auto& info = infos[j];
-                    // Creating a compact version of the AS
+                    // 创建压缩版本的加速结构
                     auto& modelAS = info.modelAs;
-                    modelAS.buffer = std::make_unique<Buffer>(
+                    modelAS.buffer = std::make_unique<StorageBuffer>(
                         compactSizes[index],
                         vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
                             vk::BufferUsageFlagBits::eShaderDeviceAddress,
                         VMA_MEMORY_USAGE_GPU_ONLY,
                         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
                     );
-                    vk::AccelerationStructureCreateInfoKHR createInfo{};
+                    vk::AccelerationStructureCreateInfoKHR createInfo = {};
                     createInfo.setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
                               .setBuffer(modelAS.buffer->getBuffer())
                               .setSize(compactSizes[index]);
                     modelAS.blas = manager->device->device.createAccelerationStructureKHR(createInfo, nullptr, manager->dispatcher);
 
-                    // Copy the original BLAS to a compact version
-                    vk::CopyAccelerationStructureInfoKHR compact{};
+                    // 将之前的底层加速结构拷贝至压缩版本中
+                    vk::CopyAccelerationStructureInfoKHR compact = {};
                     compact.setSrc(info.as)
                            .setDst(modelAS.blas)
                            .setMode(vk::CopyAccelerationStructureModeKHR::eCompact);
@@ -258,7 +268,7 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                     index++;
                 }
             } else {
-                for (auto j : buildInfoIndices) {
+                for (auto j : indices) {
                     auto& info = infos[j];
                     auto& modelAS = info.modelAs;
                     info.build
@@ -267,7 +277,7 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                         .setScratchData(getBufferAddress(scratch_->getBuffer()));
                     cmdbuf.buildAccelerationStructuresKHR(info.build, info.offsets.data(), manager->dispatcher);
 
-                    vk::MemoryBarrier barrier{};
+                    vk::MemoryBarrier barrier = {};
                     barrier.setSrcAccessMask(vk::AccessFlagBits::eAccelerationStructureWriteKHR)
                            .setDstAccessMask(vk::AccessFlagBits::eAccelerationStructureReadKHR);
                     cmdbuf.pipelineBarrier(
@@ -282,9 +292,9 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
             }
             manager->commandPool->freeSingleUse(cmdbuf);
 
-            // Reset
+            // 重置
             batchSize = 0;
-            buildInfoIndices.clear();
+            indices.clear();
         }
     }
 

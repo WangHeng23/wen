@@ -95,8 +95,8 @@ Offset Model::upload(std::shared_ptr<VertexBuffer> vertexBuffer, std::shared_ptr
 Model::~Model() {
     vertices_.clear();
     meshes_.clear();
-    vertexBuffer.reset();
-    indexBuffer.reset();
+    rayTracingVertexBuffer.reset();
+    rayTracingIndexBuffer.reset();
 }
 
 } // namespace wen

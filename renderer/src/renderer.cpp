@@ -268,7 +268,8 @@ void Renderer::traceRays(const std::shared_ptr<RayTracingRenderPipeline>& render
         renderPipeline->raygenRegion_,
         renderPipeline->missRegion_,
         renderPipeline->hitRegion_,
-        {}, width, height, depth,
+        renderPipeline->callableRegion_,
+        width, height, depth,
         manager->dispatcher
     );
 }

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "resources/buffer.hpp"
+#include "storage/storage_buffer.hpp"
 
 namespace wen {
 
 struct ModelAccelerationStructure {
     ModelAccelerationStructure() = default;
     ~ModelAccelerationStructure();
+    std::unique_ptr<StorageBuffer> buffer;
     vk::AccelerationStructureKHR blas;
-    std::unique_ptr<Buffer> buffer;
 };
 
 class RayTracingModel {
@@ -19,7 +19,7 @@ public:
 
 public:
     virtual ModelType getType() const = 0;
-    virtual ~RayTracingModel() = default;
+    virtual ~RayTracingModel();
 
     std::optional<std::unique_ptr<ModelAccelerationStructure>> modelAs;
 };

@@ -4,7 +4,7 @@ layout(binding = 0, input_attachment_index = 0) uniform subpassInput buffers[3];
 
 layout(location = 0) out vec4 outColor;
 
-layout (binding = 1) uniform CameraUniform {
+layout(binding = 1) uniform CameraUniform {
     vec3 position;
     mat4 view;
     mat4 project;

@@ -1,18 +1,18 @@
 #version 450
 
-layout (location = 0) in vec3 fragPosition;
-layout (location = 1) in vec3 fragNormal;
-layout (location = 2) in vec3 fragColor;
+layout(location = 0) in vec3 fragPosition;
+layout(location = 1) in vec3 fragNormal;
+layout(location = 2) in vec3 fragColor;
 
-layout (location = 0) out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
-layout (binding = 0) uniform CameraUniform {
+layout(binding = 0) uniform CameraUniform {
     vec3 position;
     mat4 view;
     mat4 project;
 } camera;
 
-layout (binding = 1) uniform MaterialUniform {
+layout(binding = 1) uniform MaterialUniform {
     vec3 color;
     float roughness;
     float metallic;
@@ -24,7 +24,7 @@ struct PointLight {
     vec3 color;
 };
 
-layout (binding = 2) uniform LightsUniform {
+layout(binding = 2) uniform LightsUniform {
     vec3 direction;            // 平行光
     vec3 color;                // 平行光颜色
     PointLight pointLights[3]; // 点光源

@@ -1,6 +1,7 @@
 #include "scenes/ray_tracing_1.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
+#include <random>
 
 void RayTracing::initialize() {
     auto renderPass = interface->createRenderPass();
@@ -20,18 +21,19 @@ void RayTracing::initialize() {
 
     shaderDescriptorSet_ = interface->createDescriptorSet();
     shaderDescriptorSet_->addDescriptors({
-        {0, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment|wen::ShaderStage::eRaygen}, // info
+        {0, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment|wen::ShaderStage::eRaygen|wen::ShaderStage::eMiss}, // info
         {1, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex|wen::ShaderStage::eRaygen}, // camera
     }).build();
 
     // info
     infoUniform_ = interface->createUniformBuffer(sizeof(Info));
     info_ = static_cast<Info*>(infoUniform_->getData());
-    info_->scale = 1.0f;
+    info_->clearColor = glm::vec3(0.8f, 0.8f, 0.9f);
+    info_->scale = 1;
     shaderDescriptorSet_->bindUniform(0, infoUniform_);
     // camera
     camera_ = std::make_unique<wen::Camera>();
-    camera_->data.position = {0.0f, 0.0f, -3.5f};
+    camera_->data.position = {0.0f, 1.0f, -3.5f};
     camera_->direction = {0.0f, 0.0f, 1.0f};
     camera_->upload();
     shaderDescriptorSet_->bindUniform(1, camera_->uniformBuffer);
@@ -54,9 +56,9 @@ void RayTracing::initialize() {
 
     // ray tracing
     auto rgen = interface->compileShader("ray_tracing_1/raytrace.rgen", wen::ShaderStage::eRaygen);
-    auto miss = interface->compileShader("ray_tracing_1/raytrace.rmiss", wen::ShaderStage::eMiss);
-    auto shadow = interface->compileShader("ray_tracing_1/shadow.rmiss", wen::ShaderStage::eMiss);
+    auto miss = interface->compileShader("ray_tracing_1/raytrace.miss", wen::ShaderStage::eMiss);
     auto closest = interface->compileShader("ray_tracing_1/raytrace.rchit", wen::ShaderStage::eClosestHit);
+    auto shadow = interface->compileShader("ray_tracing_1/shadow.miss", wen::ShaderStage::eMiss);
     rayTracingDescriptorSet_ = interface->createDescriptorSet();
     rayTracingDescriptorSet_->addDescriptors({
         {0, wen::DescriptorType::eAccelerationStructure, wen::ShaderStage::eRaygen|wen::ShaderStage::eClosestHit},
@@ -66,8 +68,8 @@ void RayTracing::initialize() {
     rayTracingShaderProgram_ = interface->createRayTracingShaderProgram();
     rayTracingShaderProgram_->setRaygenShader(rgen);
     rayTracingShaderProgram_->setMissShader(miss);
-    rayTracingShaderProgram_->setMissShader(shadow);
     rayTracingShaderProgram_->setHitGroup({closest, std::nullopt});
+    rayTracingShaderProgram_->setMissShader(shadow);
     rayTracingRenderPipeline_ = interface->createRayTracingRenderPipeline(rayTracingShaderProgram_);
     rayTracingRenderPipeline_->setDescriptorSet(rayTracingDescriptorSet_, 0);
     rayTracingRenderPipeline_->setDescriptorSet(shaderDescriptorSet_, 1);
@@ -133,21 +135,40 @@ void RayTracing::initialize() {
 }
 
 void RayTracing::createAccelerationStructure() {
-    model1_ = interface->loadModel("mori_knob.obj");
-    model2_ = interface->loadModel("cube.obj");
+    // model1_ = interface->loadModel("mori_knob.obj");
+    model1_ = interface->loadModel("ray_tracing/wuson.obj");
+    model2_ = interface->loadModel("ray_tracing/plane.obj");
+    model3_ = interface->loadModel("dragon.obj");
     vertexBuffer_ = interface->createVertexBuffer(sizeof(wen::Vertex), 4096000);
     indexBuffer_ = interface->createIndexBuffer(wen::IndexType::eUint32, 4096000);
 
     auto accelerationStructure = interface->createAccelerationStructure();
     accelerationStructure->addModel(model1_);
     accelerationStructure->addModel(model2_);
+    accelerationStructure->addModel(model3_);
     accelerationStructure->build(false, false);
+    accelerationStructure.reset();
 
     instance_ = interface->createRayTracingInstance(false);
-    instance_->addInstance({model1_}, glm::mat4(1.0f));
+    instance_->addModel({model1_, model2_}, glm::mat4(1.0f));
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::normal_distribution<float> distribution(0, 1);
+    std::normal_distribution<float> scale_distribution(0.3, 0.2);
+    std::uniform_real_distribution<float> color_distribution(0, 1);
+    for (int i = 0; i < 20; i++) {
+        auto pos = glm::vec3(distribution(generator) * 2, distribution(generator) * 2, distribution(generator) * 2);
+        auto rotate_vector = glm::vec3(distribution(generator), distribution(generator), distribution(generator));
+        auto start_angle = distribution(generator) * 3.1415926535f;
+        auto scale = scale_distribution(generator);
+        auto mat = glm::translate(pos) * glm::rotate(start_angle, rotate_vector) * glm::scale(glm::mat4(1), glm::vec3(scale));
+        instance_->addModel({model3_}, mat);
+    }
     instance_->build();
 
-    model2_->upload(vertexBuffer_, indexBuffer_, model1_->upload(vertexBuffer_, indexBuffer_));
+    auto offset1 = model1_->upload(vertexBuffer_, indexBuffer_);
+    auto offset2 = model2_->upload(vertexBuffer_, indexBuffer_, offset1);
+    auto offset3 = model3_->upload(vertexBuffer_, indexBuffer_, offset2);
 }
 
 void RayTracing::update(float ts) {
@@ -181,6 +202,7 @@ void RayTracing::render() {
         renderer->bindVertexBuffer(vertexBuffer_);
         renderer->bindIndexBuffer(indexBuffer_);
         renderer->drawModel(model1_, 1, 0);
+        renderer->drawModel(model2_, 1, 0);
     }
 }
 

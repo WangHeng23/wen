@@ -1,10 +1,11 @@
 #pragma once
 
 #include "resources/buffer.hpp"
+#include "resources/specific_buffer.hpp"
 
 namespace wen {
 
-class VertexBuffer : public StorageBuffer {
+class VertexBuffer : public SpecificBuffer {
 public:
     VertexBuffer(uint32_t size, uint32_t count, vk::BufferUsageFlags additionalUsage);
     ~VertexBuffer() override;
@@ -22,9 +23,9 @@ public:
         return offset + data.size();
     }
 
-    vk::Buffer getBuffer(uint32_t inFlight = 0) override { return buffer_->getBuffer(); }
-    uint64_t getSize() override { return buffer_->getSize(); }
-    void* getData() override { return buffer_->getData(); }
+    vk::Buffer getBuffer(uint32_t inFlight = 0) override { return buffer_->buffer; }
+    uint64_t getSize() override { return buffer_->size; }
+    void* getData() override { return buffer_->data; }
 
 private:
     std::unique_ptr<Buffer> staging_;

@@ -37,6 +37,7 @@ private:
     std::shared_ptr<wen::IndexBuffer> indexBuffer_;
     std::shared_ptr<wen::Model> model1_;
     std::shared_ptr<wen::Model> model2_;
+    std::shared_ptr<wen::Model> model3_;
 
     Info* info_;
     std::shared_ptr<wen::UniformBuffer> infoUniform_;

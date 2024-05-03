@@ -82,37 +82,45 @@ void RayTracingRenderPipeline::compile(const RayTracingRenderPipelineOptions& op
     auto alignAddress = [](uint32_t size, uint32_t align) {
         return (size + (align - 1)) & ~(align - 1);
     };
-    uint32_t size = rayTracingPipelineProperties.shaderGroupHandleSize;
-    uint32_t stride = alignAddress(size, rayTracingPipelineProperties.shaderGroupHandleAlignment);
-    raygenRegion_.setStride(alignAddress(size, rayTracingPipelineProperties.shaderGroupBaseAlignment))
+    uint32_t handleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
+    // 着色器绑定表 (缓存) 需要开头的组已经完成对齐并且组中的句柄也已经对齐完成
+    uint32_t handleSizeAligned = alignAddress(handleSize, rayTracingPipelineProperties.shaderGroupHandleAlignment);
+    uint32_t baseAlignment = rayTracingPipelineProperties.shaderGroupBaseAlignment;
+    raygenRegion_.setStride(alignAddress(handleSize, baseAlignment))
                  .setSize(raygenRegion_.stride);
-    missRegion_.setStride(stride)
-               .setSize(alignAddress(shaderProgram_->missShaders_.size() * stride, rayTracingPipelineProperties.shaderGroupBaseAlignment));
-    hitRegion_.setStride(stride)
-              .setSize(alignAddress(shaderProgram_->hitGroups_.size() * stride, rayTracingPipelineProperties.shaderGroupBaseAlignment));
+    missRegion_.setStride(handleSizeAligned)
+               .setSize(alignAddress(shaderProgram_->missShaders_.size() * handleSizeAligned, baseAlignment));
+    hitRegion_.setStride(handleSizeAligned)
+              .setSize(alignAddress(shaderProgram_->hitGroups_.size() * handleSizeAligned, baseAlignment));
 
-    std::vector<uint8_t> data(size * shaderGroups.size());
-    auto res = manager->device->device.getRayTracingShaderGroupHandlesKHR(pipeline, 0, shaderGroups.size(), data.size(), data.data(), manager->dispatcher);
-    buffer_ = std::make_unique<wen::Buffer>(
+    std::vector<uint8_t> handles(handleSize * shaderGroups.size());
+    auto res = manager->device->device.getRayTracingShaderGroupHandlesKHR(pipeline, 0, shaderGroups.size(), handles.size(), handles.data(), manager->dispatcher);
+    assert(res == vk::Result::eSuccess);
+    // 分配用于存储着色器绑定表的缓存
+    buffer_ = std::make_unique<Buffer>(
         raygenRegion_.size + missRegion_.size + hitRegion_.size,
         vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eShaderBindingTableKHR,
         VMA_MEMORY_USAGE_AUTO,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
     );
-    auto address = getBufferAddress(buffer_->getBuffer());
+    // 获取每组的着色器绑定表
+    auto address = getBufferAddress(buffer_->buffer);
     raygenRegion_.setDeviceAddress(address);
     missRegion_.setDeviceAddress(address + raygenRegion_.size);
     hitRegion_.setDeviceAddress(address + raygenRegion_.size + missRegion_.size);
 
     auto* ptr = static_cast<uint8_t*>(buffer_->map());
-    memcpy(ptr, data.data(), size);
+    auto getHandle = [&](int i) {
+        return handles.data() + i * handleSize;
+    };
+    memcpy(ptr, getHandle(0), handleSize);
     ptr += raygenRegion_.size;
     for (uint32_t i = 0; i < shaderProgram_->missShaders_.size(); i ++) {
-        memcpy(ptr + i * stride, data.data() + (i + 1) * size, size);
+        memcpy(ptr + i * handleSizeAligned, getHandle(1 + i), handleSize);
     }
     ptr += missRegion_.size;
     for (uint32_t i = 0; i < shaderProgram_->hitGroups_.size(); i ++) {
-        memcpy(ptr + i * stride, data.data() + (i + 1 + shaderProgram_->missShaders_.size()) * size, size);
+        memcpy(ptr + i * handleSizeAligned, getHandle(1 + shaderProgram_->missShaders_.size() + i), handleSize);
     }
     buffer_->unmap();
 }

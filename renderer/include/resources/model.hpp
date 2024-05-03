@@ -47,8 +47,8 @@ public:
                   Offset offset = {0, 0});
     
     ModelType getType() const override { return ModelType::eNormalModel; }
-    std::unique_ptr<Buffer> vertexBuffer;
-    std::unique_ptr<Buffer> indexBuffer;
+    std::unique_ptr<Buffer> rayTracingVertexBuffer;
+    std::unique_ptr<Buffer> rayTracingIndexBuffer;
 
 private:
     std::vector<Vertex> vertices_;

@@ -155,7 +155,8 @@ Device::Device() {
         properties.pNext = &accelerationStructureProperties;
         accelerationStructureProperties.pNext = &rayTracingPipelineProperties;
         physicalDevice.getProperties2(&properties);
-        WEN_INFO("Max Ray Recursion Depth: {}", rayTracingPipelineProperties.maxRayRecursionDepth);
+        WEN_INFO("\tMax Supported TLAS Instance Count: {}", accelerationStructureProperties.maxInstanceCount)
+        WEN_INFO("\tMax Ray Recursion Depth: {}", rayTracingPipelineProperties.maxRayRecursionDepth);
     }
 }
 

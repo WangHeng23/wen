@@ -5,6 +5,7 @@
 #include "resources/texture.hpp"
 #include "resources/sampler.hpp"
 #include "storage/storage_image.hpp"
+#include "storage/storage_buffer.hpp"
 #include "ray_tracing/ray_tracing_instance.hpp"
 
 namespace wen {

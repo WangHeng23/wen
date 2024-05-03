@@ -166,7 +166,7 @@ DataTexture::DataTexture(const uint8_t* data, uint32_t width, uint32_t height, u
         }
     );
 
-    copyBufferToImage(stagingBuffer.getBuffer(), image_->image, width, height);
+    copyBufferToImage(stagingBuffer.buffer, image_->image, width, height);
     generateMipmaps(image_->image, vk::Format::eR8G8B8A8Srgb, width, height, mipLevels);
 
     imageView_ = createImageView(image_->image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, mipLevels);
