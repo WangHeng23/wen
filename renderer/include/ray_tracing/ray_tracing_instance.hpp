@@ -13,10 +13,14 @@ struct RayTracingInstanceAddress {
 
 class RayTracingInstance {
 public:
-    RayTracingInstance(bool allow_update);
+    RayTracingInstance();
     ~RayTracingInstance();
+
     void addModel(std::vector<std::shared_ptr<RayTracingModel>> models, const glm::mat4& matrix);
-    void build();
+    void build(bool allow_update);
+    using FunUpdateTransform = std::function<void(const glm::mat4&)>;
+    using FunUpdateCallback = std::function<void(uint32_t, FunUpdateTransform)>;
+    void update(FunUpdateCallback callback);
 
     auto instanceAddressBuffer() { return instanceAddressBuffer_; }
     auto tlas() { return tlas_; }

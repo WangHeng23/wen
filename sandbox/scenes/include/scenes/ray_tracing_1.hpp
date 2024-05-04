@@ -7,13 +7,6 @@ public:
     struct Info {
         alignas(16) glm::vec2 windowSize;
         alignas(16) glm::vec3 clearColor;
-        alignas(4) int scale;
-    };
-
-    struct PointLight {
-        glm::vec3 position;
-        glm::vec3 color;
-        float intensity;
     };
 
 public:
@@ -38,10 +31,11 @@ private:
     std::shared_ptr<wen::Model> model1_;
     std::shared_ptr<wen::Model> model2_;
     std::shared_ptr<wen::Model> model3_;
+    std::vector<std::tuple<glm::vec3, glm::vec3, float, float>> transformInfos;
 
     Info* info_;
     std::shared_ptr<wen::UniformBuffer> infoUniform_;
-    PointLight* pointLight_;
+    glm::vec3 pointLightPosition_;
     std::shared_ptr<wen::PushConstants> pushConstants_;
 
     std::shared_ptr<wen::DescriptorSet> shaderDescriptorSet_;

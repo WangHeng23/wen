@@ -47,7 +47,7 @@ public:
     std::shared_ptr<RayTracingShaderProgram> createRayTracingShaderProgram();
     std::shared_ptr<RayTracingRenderPipeline> createRayTracingRenderPipeline(std::shared_ptr<RayTracingShaderProgram> shaderProgram);
     std::shared_ptr<AccelerationStructure> createAccelerationStructure();
-    std::shared_ptr<RayTracingInstance> createRayTracingInstance(bool allow_update = true);
+    std::shared_ptr<RayTracingInstance> createRayTracingInstance();
 
 private:
     std::string path_;

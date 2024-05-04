@@ -6,7 +6,6 @@
 layout(set = 1, binding = 0) uniform Info {
     vec2 windowSize;
     vec3 clearColor;
-    int scale;
 } info;
 
 layout(location = 0) rayPayloadInEXT HitPayload prd;

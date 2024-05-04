@@ -1,11 +1,11 @@
 #include "ray_tracing/ray_tracing_instance.hpp"
 #include "utils/utils.hpp"
+#include "core/logger.hpp"
 #include "manager.hpp"
 
 namespace wen {
 
-RayTracingInstance::RayTracingInstance(bool allow_update)
-    : allow_update_(allow_update), instanceCount_(0) {}
+RayTracingInstance::RayTracingInstance() : instanceCount_(0) {}
 
 RayTracingInstance::~RayTracingInstance() {
     instanceBuffer_.reset();
@@ -35,7 +35,7 @@ void RayTracingInstance::addModel(std::vector<std::shared_ptr<RayTracingModel>> 
     }
 }
 
-void RayTracingInstance::build() {
+void RayTracingInstance::build(bool allow_update) {
     instanceBuffer_ = std::make_unique<Buffer>(
         instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR),
         vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
@@ -67,7 +67,7 @@ void RayTracingInstance::build() {
     vk::AccelerationStructureBuildGeometryInfoKHR build = {};
     // 在构建加速结构时，优先考虑光线追踪的速度
     vk::BuildAccelerationStructureFlagsKHR flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-    if (allow_update_) {
+    if (allow_update) {
         flags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
     }
     build.setType(vk::AccelerationStructureTypeKHR::eTopLevel)
@@ -78,7 +78,7 @@ void RayTracingInstance::build() {
     // 获取加速结构大小
     auto size = manager->device->device.getAccelerationStructureBuildSizesKHR(
         vk::AccelerationStructureBuildTypeKHR::eDevice,
-        build, 1, manager->dispatcher
+        build, instanceCount_, manager->dispatcher
     );
 
     // 创建顶层加速结构
@@ -116,6 +116,81 @@ void RayTracingInstance::build() {
         scratch_.reset();
         instanceBuffer_.reset();
     }
+}
+
+void RayTracingInstance::update(FunUpdateCallback callback) {
+    if (!allow_update_) {
+        WEN_WARN("you had set allow_update to false, you can't call this function")
+        return;
+    }
+
+    auto update = [&](uint32_t begin, uint32_t end) {
+        auto currentInstance = instances.begin();
+        for (uint32_t i = 0; i < begin; i++) {
+            currentInstance++;
+        }
+        FunUpdateTransform updateTransform = [&](const glm::mat4& transform) {
+            currentInstance->setTransform(convert<vk::TransformMatrixKHR, const glm::mat4&>(transform));
+        };
+        while (begin < end) {
+            callback(begin, updateTransform);
+            currentInstance++;
+            begin++;
+        }
+    };
+    uint32_t index = 0;
+    std::vector<std::thread> threads;
+    while (index < instanceCount_) {
+        uint32_t end = std::min(index + 100, instanceCount_);
+        threads.emplace_back([=]() {
+            update(index, end);
+        });
+        index = end;
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    auto* ptr = static_cast<uint8_t*>(instanceBuffer_->map());
+    memcpy(ptr, instances.data(), instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR));
+    instanceBuffer_->unmap();
+
+    vk::AccelerationStructureGeometryInstancesDataKHR geometryInstances = {};
+    geometryInstances.setData(getBufferAddress(instanceBuffer_->buffer));
+    vk::AccelerationStructureGeometryKHR geometry = {};
+    geometry.setGeometry(geometryInstances)
+            .setGeometryType(vk::GeometryTypeKHR::eInstances);
+
+    vk::AccelerationStructureBuildGeometryInfoKHR build = {};
+    build.setType(vk::AccelerationStructureTypeKHR::eTopLevel)
+         .setMode(vk::BuildAccelerationStructureModeKHR::eUpdate)
+         .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace | vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate)
+         .setGeometries(geometry);
+    
+    auto size = manager->device->device.getAccelerationStructureBuildSizesKHR(
+        vk::AccelerationStructureBuildTypeKHR::eDevice,
+        build, instanceCount_, manager->dispatcher
+    );
+
+    auto cmdbuf = manager->commandPool->allocateSingleUse();
+    if (scratch_->getSize() < size.updateScratchSize) {
+        scratch_.reset();
+        scratch_ = std::make_unique<StorageBuffer>(
+            size.updateScratchSize,
+            vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
+        );
+    }
+    build.setSrcAccelerationStructure(tlas_)
+         .setDstAccelerationStructure(tlas_)
+         .setScratchData(getBufferAddress(scratch_->getBuffer()));
+    vk::AccelerationStructureBuildRangeInfoKHR range = {};
+    range.setPrimitiveCount(instanceCount_)
+         .setPrimitiveOffset(0)
+         .setFirstVertex(0)
+         .setTransformOffset(0);
+    cmdbuf.buildAccelerationStructuresKHR(build, &range, manager->dispatcher);
+    manager->commandPool->freeSingleUse(cmdbuf);
 }
 
 RayTracingInstanceAddress RayTracingInstance::createInstanceAddress(RayTracingModel& model) {

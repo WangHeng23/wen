@@ -6,7 +6,7 @@ layout(location = 2) in vec3 fragColor;
 
 layout(location = 0) out vec4 outColor;
 
-layout(push_constant) uniform PointLight {
+layout(push_constant) uniform PushConstant {
     vec3 position;
     vec3 color;
     float intensity; 

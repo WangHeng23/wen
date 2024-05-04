@@ -108,8 +108,8 @@ std::shared_ptr<AccelerationStructure> Interface::createAccelerationStructure() 
     return std::make_shared<AccelerationStructure>();
 }
 
-std::shared_ptr<RayTracingInstance> Interface::createRayTracingInstance(bool allow_update) {
-    return std::make_shared<RayTracingInstance>(allow_update);
+std::shared_ptr<RayTracingInstance> Interface::createRayTracingInstance() {
+    return std::make_shared<RayTracingInstance>();
 }
 
 } // namespace wen

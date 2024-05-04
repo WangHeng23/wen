@@ -21,15 +21,14 @@ void RayTracing::initialize() {
 
     shaderDescriptorSet_ = interface->createDescriptorSet();
     shaderDescriptorSet_->addDescriptors({
-        {0, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment|wen::ShaderStage::eRaygen|wen::ShaderStage::eMiss}, // info
-        {1, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex|wen::ShaderStage::eRaygen}, // camera
+        {0, wen::DescriptorType::eUniform, wen::ShaderStage::eFragment | wen::ShaderStage::eMiss}, // info
+        {1, wen::DescriptorType::eUniform, wen::ShaderStage::eVertex | wen::ShaderStage::eRaygen}, // camera
     }).build();
 
     // info
     infoUniform_ = interface->createUniformBuffer(sizeof(Info));
     info_ = static_cast<Info*>(infoUniform_->getData());
     info_->clearColor = glm::vec3(0.8f, 0.8f, 0.9f);
-    info_->scale = 1;
     shaderDescriptorSet_->bindUniform(0, infoUniform_);
     // camera
     camera_ = std::make_unique<wen::Camera>();
@@ -39,20 +38,15 @@ void RayTracing::initialize() {
     shaderDescriptorSet_->bindUniform(1, camera_->uniformBuffer);
     // point light
     pushConstants_ = interface->createPushConstants(
-        wen::ShaderStage::eFragment | wen::ShaderStage::eClosestHit,
+        wen::ShaderStage::eFragment | wen::ShaderStage::eRaygen | wen::ShaderStage::eClosestHit,
         {
             {"position", wen::ConstantType::eFloat3},
             {"color", wen::ConstantType::eFloat3},
             {"intensity", wen::ConstantType::eFloat},
+            {"sample count", wen::ConstantType::eInt32},
         } 
     );
-    pointLight_ = new PointLight();
-    pointLight_->position = {2.0f, 2.0f, 2.0f};
-    pointLight_->color = {1.0f, 1.0f, 1.0f};
-    pointLight_->intensity = 5.0f;
-    pushConstants_->pushConstant("position", &pointLight_->position);
-    pushConstants_->pushConstant("color", &pointLight_->color);
-    pushConstants_->pushConstant("intensity", &pointLight_->intensity);
+    pointLightPosition_ = glm::vec3(2.0f, 2.0f, 2.0f);
 
     // ray tracing
     auto rgen = interface->compileShader("ray_tracing_1/raytrace.rgen", wen::ShaderStage::eRaygen);
@@ -136,6 +130,7 @@ void RayTracing::initialize() {
 
 void RayTracing::createAccelerationStructure() {
     // model1_ = interface->loadModel("mori_knob.obj");
+    // model2_ = interface->loadModel("mori_knob.obj");
     model1_ = interface->loadModel("ray_tracing/wuson.obj");
     model2_ = interface->loadModel("ray_tracing/plane.obj");
     model3_ = interface->loadModel("dragon.obj");
@@ -149,22 +144,26 @@ void RayTracing::createAccelerationStructure() {
     accelerationStructure->build(false, false);
     accelerationStructure.reset();
 
-    instance_ = interface->createRayTracingInstance(false);
+    instance_ = interface->createRayTracingInstance();
     instance_->addModel({model1_, model2_}, glm::mat4(1.0f));
     std::random_device device;
     std::mt19937 generator(device());
     std::normal_distribution<float> distribution(0, 1);
-    std::normal_distribution<float> scale_distribution(0.3, 0.2);
-    std::uniform_real_distribution<float> color_distribution(0, 1);
-    for (int i = 0; i < 20; i++) {
-        auto pos = glm::vec3(distribution(generator) * 2, distribution(generator) * 2, distribution(generator) * 2);
-        auto rotate_vector = glm::vec3(distribution(generator), distribution(generator), distribution(generator));
-        auto start_angle = distribution(generator) * 3.1415926535f;
-        auto scale = scale_distribution(generator);
-        auto mat = glm::translate(pos) * glm::rotate(start_angle, rotate_vector) * glm::scale(glm::mat4(1), glm::vec3(scale));
-        instance_->addModel({model3_}, mat);
+    std::normal_distribution<float> scaleDistribution(0.3f, 0.2f);
+    std::uniform_real_distribution<float> colorDistribution(0, 1);
+    for (int i = 0; i < 500; i++) {
+        auto position = glm::vec3(distribution(generator) * 2, distribution(generator) * 2, distribution(generator) * 2);
+        auto rotateAxis = glm::vec3(distribution(generator), distribution(generator), distribution(generator));
+        auto rotateAngle = distribution(generator) * 3.1415926535f;
+        auto scale = scaleDistribution(generator);
+        transformInfos.push_back({position, rotateAxis, rotateAngle, scale});
+        auto transform =
+            glm::translate(position) *
+            glm::rotate(rotateAngle, rotateAxis) *
+            glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+        instance_->addModel({model3_}, transform);
     }
-    instance_->build();
+    instance_->build(true);
 
     auto offset1 = model1_->upload(vertexBuffer_, indexBuffer_);
     auto offset2 = model2_->upload(vertexBuffer_, indexBuffer_, offset1);
@@ -175,7 +174,29 @@ void RayTracing::update(float ts) {
     camera_->update(ts);
     static float time = 0;
     time += ImGui::GetIO().DeltaTime;
-    pointLight_->position = glm::rotateY(glm::vec3(2.0f, pointLight_->position.y, 2.0f), time);
+    pointLightPosition_ = glm::rotateY(glm::vec3(2.0f, pointLightPosition_.y, 2.0f), time);
+
+    if (isEnableRayTracing) {
+        instance_->update([&](uint32_t index, auto updateTransform) {
+            // model1_, model2_
+            if (index == 0 || index == 1) {
+                return;
+            }
+            auto [position, rotateAxis, rotateAngle, scale] = transformInfos[index - 2];
+            rotateAngle += time;
+            scale *= (cos(time * 1.8f + rotateAngle) + 3.0f) / 3.0f;
+            // 开普勒第三定律
+            auto distance3 = glm::pow(glm::length(position), 3.0f);
+            auto k = 2.0f / distance3;
+            auto w = glm::sqrt(k);
+            position = glm::rotate(w * time, rotateAxis) * glm::vec4(position, 1);
+            auto transform =
+                glm::translate(position) *
+                glm::rotate(rotateAngle, rotateAxis) *
+                glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+            updateTransform(transform);
+        });
+    }
 }
 
 void RayTracing::render() {
@@ -209,14 +230,23 @@ void RayTracing::render() {
 void RayTracing::imgui() {
     ImGui::Text("FrameRate: %f", ImGui::GetIO().Framerate);
     ImGui::Checkbox("Enabel Ray Tracing", &isEnableRayTracing);
-    ImGui::SliderInt("Ray Tracing Scale", &info_->scale, 1, 5);
     ImGui::ColorEdit3("Clear Color", &info_->clearColor.r);
-    ImGui::ColorEdit3("Light Color", &pointLight_->color.r);
-    ImGui::SliderFloat("Light Intensity", &pointLight_->intensity, 0, 20);
-    ImGui::SliderFloat("Light Height", &pointLight_->position.y, -5, 5);
-    pushConstants_->pushConstant("position", &pointLight_->position);
-    pushConstants_->pushConstant("color", &pointLight_->color);
-    pushConstants_->pushConstant("intensity", &pointLight_->intensity);
+
+    ImGui::SeparatorText("Light");
+    ImGui::SliderFloat("Light Height", &pointLightPosition_.y, -1, 6);
+    pushConstants_->pushConstant("position", &pointLightPosition_);
+
+    static glm::vec3 color = {1.0f, 1.0f, 1.0f};
+    ImGui::ColorEdit3("Light Color", &color.r);
+    pushConstants_->pushConstant("color", &color);
+
+    static float intensity = 5.0f;
+    ImGui::SliderFloat("Light Intensity", &intensity, 0, 30);
+    pushConstants_->pushConstant("intensity", &intensity);
+
+    static int sampleCount = 1;
+    ImGui::SliderInt("Sample Count", &sampleCount, 1, 9);
+    pushConstants_->pushConstant("sample count", &sampleCount);
 }
 
 void RayTracing::destroy() {}

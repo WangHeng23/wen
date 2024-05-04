@@ -19,7 +19,7 @@ layout(binding = 2, set = 0, scalar) buffer InstanceInfo_ {
     InstanceAddressInfo infos[];
 } instanceInfo;
 
-layout(push_constant) uniform PointLight {
+layout(push_constant) uniform PushConstant {
     vec3 position;
     vec3 color;
     float intensity; 
@@ -54,10 +54,12 @@ void main() {
     // 质心权重
     vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
 
-    // 命中点坐标
+    // 命中点坐标(模型空间 -> 世界空间)
     vec3 position = v0.position * barycentrics.x + v1.position * barycentrics.y + v2.position * barycentrics.z;
-    // 命中点法线
+    position = (gl_ObjectToWorldEXT * vec4(position, 1.0)).xyz;
+    // 命中点法线(模型空间 -> 世界空间)
     vec3 normal = normalize(v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z);
+    normal = normalize((gl_ObjectToWorldEXT * vec4(normal, 0.0)).xyz);
 
     // gl_RayFlagsSkipClosestHitShaderKHR ：将不会调用最近命中着色器，只会调用未命中着色器
     // gl_RayFlagsOpaqueKHR ：将不会调用任意命中着色器，所以所有的对象都是不透明的
