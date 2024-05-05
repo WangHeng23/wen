@@ -35,11 +35,11 @@ void Camera::update(float ts) {
         spaceDown = true;
     } else if (spaceDown && spaceState == GLFW_RELEASE) {
         spaceDown = false;
-        isCursorLocked_ = !isCursorLocked_;
-        glfwSetInputMode(glfwWindow, GLFW_CURSOR, isCursorLocked_ ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+        isCursorLocked = !isCursorLocked;
+        glfwSetInputMode(glfwWindow, GLFW_CURSOR, isCursorLocked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     }
 
-    if (!isCursorLocked_) {
+    if (!isCursorLocked) {
         last = now;
         return;
     }

@@ -16,13 +16,12 @@ public:
     glm::vec3 direction;
     std::shared_ptr<wen::UniformBuffer> uniformBuffer;
 
+    bool isCursorLocked = false;
+
 public:
     Camera();
     void update(float ts);
     void upload();
-
-private:
-    bool isCursorLocked_ = false;
 };
 
 } // namespace wen

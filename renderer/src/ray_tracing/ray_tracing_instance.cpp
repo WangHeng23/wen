@@ -9,15 +9,15 @@ RayTracingInstance::RayTracingInstance() : instanceCount_(0) {}
 
 RayTracingInstance::~RayTracingInstance() {
     instanceBuffer_.reset();
-    manager->device->device.destroyAccelerationStructureKHR(tlas_, nullptr, manager->dispatcher);
+    manager->device->device.destroyAccelerationStructureKHR(tlas, nullptr, manager->dispatcher);
     scratch_.reset();
     buffer_.reset();
 }
 
-void RayTracingInstance::addModel(std::vector<std::shared_ptr<RayTracingModel>> models, const glm::mat4& matrix) {
+void RayTracingInstance::addModel(uint32_t id, std::vector<std::shared_ptr<RayTracingModel>> models, const glm::mat4& matrix) {
     for (auto& model : models) {
         auto& blas = model->modelAs.value()->blas;
-        instances.emplace_back()
+        instances_.emplace_back()
             // 在着色器中被用来区分不同的实例
             .setInstanceCustomIndex(instanceCount_)
             // 用于在着色器绑定表中找到对应的着色器
@@ -30,12 +30,23 @@ void RayTracingInstance::addModel(std::vector<std::shared_ptr<RayTracingModel>> 
             .setAccelerationStructureReference(getAccelerationStructureAddress(blas))
             // 用于将实例的加速结构从模型空间变换到世界空间
             .setTransform(convert<vk::TransformMatrixKHR, const glm::mat4&>(matrix));
-        instanceAddresses.push_back(createInstanceAddress(*model));
+        instanceAddresses_.push_back(createInstanceAddress(*model));
         instanceCount_++;
+        groups_[id].count++;
     }
 }
 
 void RayTracingInstance::build(bool allow_update) {
+    int count = 0;
+    for (auto& [id, group] : groups_) {
+        group.offset = count;
+        count += group.count;
+    }
+    for (auto& [id, group] : groups_) {
+        WEN_INFO("group id: {0}, offset: {1}, count: {2}", id, group.offset, group.count);
+    }
+
+    this->allow_update = allow_update;
     instanceBuffer_ = std::make_unique<Buffer>(
         instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR),
         vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
@@ -43,18 +54,7 @@ void RayTracingInstance::build(bool allow_update) {
         VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
     );
     auto* ptr = static_cast<uint8_t*>(instanceBuffer_->map());
-    memcpy(ptr, instances.data(), instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR));
-    instanceBuffer_->unmap();
-
-    instanceAddressBuffer_ = std::make_unique<StorageBuffer>(
-        instanceCount_ * sizeof(RayTracingInstanceAddress),
-        vk::BufferUsageFlagBits::eStorageBuffer,
-        VMA_MEMORY_USAGE_CPU_TO_GPU,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-    );
-    ptr = static_cast<uint8_t*>(instanceAddressBuffer_->map());
-    memcpy(ptr, instanceAddresses.data(), instanceCount_ * sizeof(RayTracingInstanceAddress));
-    instanceAddressBuffer_->unmap();
+    memcpy(ptr, instances_.data(), instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR));
 
     // 将之前拷贝上传的实体设备内存进行设置打包
     vk::AccelerationStructureGeometryInstancesDataKHR geometryInstances = {};
@@ -92,7 +92,7 @@ void RayTracingInstance::build(bool allow_update) {
     createInfo.setType(vk::AccelerationStructureTypeKHR::eTopLevel)
               .setSize(size.accelerationStructureSize)
               .setBuffer(buffer_->getBuffer());
-    tlas_ = manager->device->device.createAccelerationStructureKHR(createInfo, nullptr, manager->dispatcher);
+    tlas = manager->device->device.createAccelerationStructureKHR(createInfo, nullptr, manager->dispatcher);
 
     // 构建顶层加速结构
     auto cmdbuf = manager->commandPool->allocateSingleUse();
@@ -102,7 +102,7 @@ void RayTracingInstance::build(bool allow_update) {
         VMA_MEMORY_USAGE_GPU_ONLY,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
     );
-    build.setDstAccelerationStructure(tlas_)
+    build.setDstAccelerationStructure(tlas)
          .setScratchData(getBufferAddress(scratch_->getBuffer()));
     vk::AccelerationStructureBuildRangeInfoKHR range = {};
     range.setPrimitiveCount(instanceCount_)
@@ -111,48 +111,34 @@ void RayTracingInstance::build(bool allow_update) {
          .setTransformOffset(0);
     cmdbuf.buildAccelerationStructuresKHR(build, &range, manager->dispatcher);
     manager->commandPool->freeSingleUse(cmdbuf);
-
-    if (!allow_update_) {
-        scratch_.reset();
-        instanceBuffer_.reset();
-    }
 }
 
-void RayTracingInstance::update(FunUpdateCallback callback) {
-    if (!allow_update_) {
-        WEN_WARN("you had set allow_update to false, you can't call this function")
+void RayTracingInstance::update(uint32_t id, FunUpdateCallback callback) {
+    if (!allow_update) {
+        WEN_WARN("you had set allow_update to false, you can't update the instance!")
         return;
     }
 
-    auto update = [&](uint32_t begin, uint32_t end) {
-        auto currentInstance = instances.begin();
-        for (uint32_t i = 0; i < begin; i++) {
-            currentInstance++;
-        }
+    auto update = [=](uint32_t index, uint32_t begin, uint32_t end) {
+        auto* asInstancePtr = static_cast<vk::AccelerationStructureInstanceKHR*>(instanceBuffer_->data);
+        asInstancePtr += begin;
         FunUpdateTransform updateTransform = [&](const glm::mat4& transform) {
-            currentInstance->setTransform(convert<vk::TransformMatrixKHR, const glm::mat4&>(transform));
+            asInstancePtr->setTransform(convert<vk::TransformMatrixKHR, const glm::mat4&>(transform));
         };
         while (begin < end) {
-            callback(begin, updateTransform);
-            currentInstance++;
+            callback(index, updateTransform);
+            asInstancePtr++;
+            index++;
             begin++;
         }
     };
-    uint32_t index = 0;
-    std::vector<std::thread> threads;
-    while (index < instanceCount_) {
-        uint32_t end = std::min(index + 100, instanceCount_);
-        threads.emplace_back([=]() {
-            update(index, end);
-        });
-        index = end;
-    }
-    for (auto& thread : threads) {
-        thread.join();
-    }
-    auto* ptr = static_cast<uint8_t*>(instanceBuffer_->map());
-    memcpy(ptr, instances.data(), instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR));
-    instanceBuffer_->unmap();
+
+#define MT 1
+#if MT
+    multiThreadUpdate(id, update);
+#else
+    singleThreadUpdate(id, update);
+#endif
 
     vk::AccelerationStructureGeometryInstancesDataKHR geometryInstances = {};
     geometryInstances.setData(getBufferAddress(instanceBuffer_->buffer));
@@ -181,8 +167,8 @@ void RayTracingInstance::update(FunUpdateCallback callback) {
             VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
         );
     }
-    build.setSrcAccelerationStructure(tlas_)
-         .setDstAccelerationStructure(tlas_)
+    build.setSrcAccelerationStructure(tlas)
+         .setDstAccelerationStructure(tlas)
          .setScratchData(getBufferAddress(scratch_->getBuffer()));
     vk::AccelerationStructureBuildRangeInfoKHR range = {};
     range.setPrimitiveCount(instanceCount_)
@@ -200,6 +186,37 @@ RayTracingInstanceAddress RayTracingInstance::createInstanceAddress(RayTracingMo
                 getBufferAddress(dynamic_cast<Model&>(model).rayTracingVertexBuffer->buffer),
                 getBufferAddress(dynamic_cast<Model&>(model).rayTracingIndexBuffer->buffer),
             };
+    }
+}
+
+void RayTracingInstance::singleThreadUpdate(uint32_t id, FunUpdate update) {
+    auto groupInfo = groups_.at(id);
+    uint32_t begin = groupInfo.offset;
+    uint32_t end = begin + groupInfo.count;
+    
+    uint32_t index = 0;
+    update(index, begin, end);
+}
+
+void RayTracingInstance::multiThreadUpdate(uint32_t id, FunUpdate update) {
+    auto groupInfo = groups_.at(id);
+    uint32_t begin = groupInfo.offset;
+    uint32_t end = begin + groupInfo.count;
+    
+    uint32_t index = 0;
+    std::vector<std::thread> threads;
+    while (begin < end) {
+        // 每批次更新1000个实例
+        uint32_t batchEnd = std::min(begin + 1000, end);
+        // 不能传引用传参，避免数据竞争
+        threads.emplace_back([=]() {
+            update(index, begin, batchEnd);
+        });
+        index += 1000;
+        begin = batchEnd;
+    }
+    for (auto& thread : threads) {
+        thread.join();
     }
 }
 

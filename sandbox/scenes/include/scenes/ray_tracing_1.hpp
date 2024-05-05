@@ -23,6 +23,7 @@ public:
     void createAccelerationStructure();
 
 private:
+    int frame_ = 0;
     std::unique_ptr<wen::Camera> camera_;
 
     std::shared_ptr<wen::RayTracingInstance> instance_;
@@ -31,7 +32,7 @@ private:
     std::shared_ptr<wen::Model> model1_;
     std::shared_ptr<wen::Model> model2_;
     std::shared_ptr<wen::Model> model3_;
-    std::vector<std::tuple<glm::vec3, glm::vec3, float, float>> transformInfos;
+    std::map<uint32_t, std::vector<std::tuple<glm::vec3, glm::vec3, float, float>>> transformInfos;
 
     Info* info_;
     std::shared_ptr<wen::UniformBuffer> infoUniform_;

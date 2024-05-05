@@ -2,6 +2,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #include <random>
+#include <functional>
 
 void RayTracing::initialize() {
     auto renderPass = interface->createRenderPass();
@@ -44,6 +45,7 @@ void RayTracing::initialize() {
             {"color", wen::ConstantType::eFloat3},
             {"intensity", wen::ConstantType::eFloat},
             {"sample count", wen::ConstantType::eInt32},
+            {"frame", wen::ConstantType::eInt32},
         } 
     );
     pointLightPosition_ = glm::vec3(2.0f, 2.0f, 2.0f);
@@ -145,7 +147,7 @@ void RayTracing::createAccelerationStructure() {
     accelerationStructure.reset();
 
     instance_ = interface->createRayTracingInstance();
-    instance_->addModel({model1_, model2_}, glm::mat4(1.0f));
+    instance_->addModel(0, {model1_, model2_}, glm::mat4(1.0f));
     std::random_device device;
     std::mt19937 generator(device());
     std::normal_distribution<float> distribution(0, 1);
@@ -156,13 +158,20 @@ void RayTracing::createAccelerationStructure() {
         auto rotateAxis = glm::vec3(distribution(generator), distribution(generator), distribution(generator));
         auto rotateAngle = distribution(generator) * 3.1415926535f;
         auto scale = scaleDistribution(generator);
-        transformInfos.push_back({position, rotateAxis, rotateAngle, scale});
+        transformInfos[1].push_back({position, rotateAxis, rotateAngle, scale});
         auto transform =
             glm::translate(position) *
             glm::rotate(rotateAngle, rotateAxis) *
             glm::scale(glm::mat4(1.0f), glm::vec3(scale));
-        instance_->addModel({model3_}, transform);
+        instance_->addModel(1, {model3_}, transform);
     }
+    instance_->addModel(2, {model1_}, glm::mat4(1.0f));
+    transformInfos[2].push_back({
+        glm::vec3(2.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        0.0f,
+        1.0f
+    });
     instance_->build(true);
 
     auto offset1 = model1_->upload(vertexBuffer_, indexBuffer_);
@@ -177,12 +186,14 @@ void RayTracing::update(float ts) {
     pointLightPosition_ = glm::rotateY(glm::vec3(2.0f, pointLightPosition_.y, 2.0f), time);
 
     if (isEnableRayTracing) {
-        instance_->update([&](uint32_t index, auto updateTransform) {
-            // model1_, model2_
-            if (index == 0 || index == 1) {
-                return;
-            }
-            auto [position, rotateAxis, rotateAngle, scale] = transformInfos[index - 2];
+        pushConstants_->pushConstant("frame", &frame_);
+        frame_++;
+        if (camera_->isCursorLocked) {
+            frame_ = 0;
+        }
+
+        instance_->allow_update ? instance_->update(1, [&](uint32_t index, auto updateTransform) {
+            auto [position, rotateAxis, rotateAngle, scale] = transformInfos.at(1)[index];
             rotateAngle += time;
             scale *= (cos(time * 1.8f + rotateAngle) + 3.0f) / 3.0f;
             // 开普勒第三定律
@@ -195,7 +206,16 @@ void RayTracing::update(float ts) {
                 glm::rotate(rotateAngle, rotateAxis) *
                 glm::scale(glm::mat4(1.0f), glm::vec3(scale));
             updateTransform(transform);
-        });
+        }) : void();
+    
+        instance_->allow_update ? instance_->update(2, [&](uint32_t index, auto updateTransform) {
+            auto [position, rotateAxis, rotateAngle, scale] = transformInfos.at(2)[index];
+            auto transform =
+                glm::translate(position) *
+                glm::rotate(rotateAngle, rotateAxis) *
+                glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+            updateTransform(transform);
+        }) : void();
     }
 }
 
@@ -228,25 +248,32 @@ void RayTracing::render() {
 }
 
 void RayTracing::imgui() {
+    bool changed = false;
+
     ImGui::Text("FrameRate: %f", ImGui::GetIO().Framerate);
     ImGui::Checkbox("Enabel Ray Tracing", &isEnableRayTracing);
     ImGui::ColorEdit3("Clear Color", &info_->clearColor.r);
 
     ImGui::SeparatorText("Light");
-    ImGui::SliderFloat("Light Height", &pointLightPosition_.y, -1, 6);
+    changed |= ImGui::SliderFloat("Light Height", &pointLightPosition_.y, -1, 6);
     pushConstants_->pushConstant("position", &pointLightPosition_);
 
     static glm::vec3 color = {1.0f, 1.0f, 1.0f};
-    ImGui::ColorEdit3("Light Color", &color.r);
+    changed |= ImGui::ColorEdit3("Light Color", &color.r);
     pushConstants_->pushConstant("color", &color);
 
     static float intensity = 5.0f;
-    ImGui::SliderFloat("Light Intensity", &intensity, 0, 30);
+    changed |= ImGui::SliderFloat("Light Intensity", &intensity, 0, 30);
     pushConstants_->pushConstant("intensity", &intensity);
 
     static int sampleCount = 1;
-    ImGui::SliderInt("Sample Count", &sampleCount, 1, 9);
+    changed |= ImGui::SliderInt("Sample Count", &sampleCount, 1, 9);
     pushConstants_->pushConstant("sample count", &sampleCount);
+
+    if (changed) {
+        frame_ = 0;
+    }
+    ImGui::Text("Frame Index: %d", frame_);
 }
 
 void RayTracing::destroy() {}

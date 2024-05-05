@@ -95,7 +95,7 @@ void main() {
     );
 
     // 计算返回rgen着色器的prd.value值
-    prd.value = max(dot(l, normal), 0) * light.color * light.intensity / len / len;
+    prd.value = vec3(0.9, 0.3, 0.2) * 0.3 + max(dot(l, normal), 0) * light.color * light.intensity / len / len;
 
     if (shadow) {
         prd.value *= 0.3;

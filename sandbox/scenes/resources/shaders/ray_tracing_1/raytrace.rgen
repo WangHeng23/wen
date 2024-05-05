@@ -2,6 +2,7 @@
 #extension GL_EXT_ray_tracing : require
 
 #include "ray.glsl"
+#include "random.glsl"
 #include <RayTracing>
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT tlas;
@@ -12,6 +13,7 @@ layout(push_constant) uniform PushConstant {
     vec3 color;
     float intensity; 
     int sampleCount;
+    int frame;
 } constant;
 
 layout(binding = 1, set = 1) uniform Camera {
@@ -24,9 +26,18 @@ layout(location = 0) rayPayloadEXT HitPayload prd;
 
 void main() {
     vec3 value = vec3(0);
+    // 初始化随机种子
+    uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, constant.frame);
     for (int i = 0; i < constant.sampleCount; i++) {
         // gl_LaunchIDEXT 包含被渲染像素的整数坐标位置，pixelPoint就是一个像素中斜线上的点
         vec2 pixelPoint = vec2(gl_LaunchIDEXT.xy) + vec2((i + 1.0f) / float(constant.sampleCount + 1));
+
+        float r1 = rnd(seed);
+        float r2 = rnd(seed);
+        // 子像素抖动采样: 每次在像素中的不同位置发射光线，以达到抗锯齿的目的
+        vec2 subpixel_jitter = constant.frame == 0 ? vec2(0.5f, 0.5f) : vec2(r1, r2);
+        pixelPoint = vec2(gl_LaunchIDEXT.xy) + subpixel_jitter;
+
         // gl_LaunchSizeEXT 包含了当执行 vkCmdTraceRaysKHR 指令时指定的渲染图片维度
         // [0, 1] -> [-1, 1]
         vec2 uv = pixelPoint / gl_LaunchSizeEXT.xy;
@@ -62,5 +73,10 @@ void main() {
     }
     
     // 将负载结果写入图片
-    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(value / float(constant.sampleCount), 1.0));
+    float a = 1.0f / float(constant.frame + 1);
+    vec3 oldColor = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).rgb;
+    vec3 color = value / float(constant.sampleCount);
+    int b = 0;
+    if (b == 0) a = 1;
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(mix(oldColor, color, a), 1.0f));
 }

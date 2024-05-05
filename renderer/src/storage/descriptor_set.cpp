@@ -212,7 +212,7 @@ void DescriptorSet::bindAccelerationStructures(uint32_t binding, const std::vect
         std::vector<vk::AccelerationStructureKHR> as;
         as.reserve(instances.size());
         for (auto& instance : instances) {
-            as.push_back(instance->tlas());
+            as.push_back(instance->tlas);
         }
         vk::WriteDescriptorSetAccelerationStructureKHR writeAs = {};
         writeAs.setAccelerationStructureCount(as.size())
