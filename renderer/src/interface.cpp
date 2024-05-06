@@ -1,6 +1,7 @@
 #include "interface.hpp"
 #include "utils/utils.hpp"
 #include "core/logger.hpp"
+#include "storage/ktx_texture.hpp"
 
 namespace wen {
 
@@ -71,6 +72,12 @@ std::shared_ptr<Texture> Interface::createTexture(const std::string& filename, u
     std::string filepath = textureDir_ + filename;
     if (filetype == "png" || filetype == "jpg") {
         return std::make_shared<ImageTexture>(filepath, mipLevels);
+    }
+    if (filetype == "ktx") {
+        if (mipLevels != 0) {
+            WEN_WARN("mip levels are not supported for ktx texture!")
+        }
+        return std::make_shared<KtxTexture>(filepath);
     }
     WEN_ERROR("Unsupported texture file type: {}", filetype)
     return nullptr;

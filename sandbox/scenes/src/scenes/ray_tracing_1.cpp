@@ -2,7 +2,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #include <random>
-#include <functional>
 
 void RayTracing::initialize() {
     auto renderPass = interface->createRenderPass();
@@ -41,11 +40,11 @@ void RayTracing::initialize() {
     pushConstants_ = interface->createPushConstants(
         wen::ShaderStage::eFragment | wen::ShaderStage::eRaygen | wen::ShaderStage::eClosestHit,
         {
-            {"position", wen::ConstantType::eFloat3},
-            {"color", wen::ConstantType::eFloat3},
-            {"intensity", wen::ConstantType::eFloat},
-            {"sample count", wen::ConstantType::eInt32},
-            {"frame", wen::ConstantType::eInt32},
+            {"position", wen::ConstantType::eFloat3},    // 12 -> 16
+            {"color", wen::ConstantType::eFloat3},       // 12 -> 16
+            {"intensity", wen::ConstantType::eFloat},    // 4 -> 4
+            {"sample count", wen::ConstantType::eInt32}, // 4 -> 4
+            {"frame", wen::ConstantType::eInt32},        // 4 -> 4
         } 
     );
     pointLightPosition_ = glm::vec3(2.0f, 2.0f, 2.0f);

@@ -140,7 +140,7 @@ int main() {
         camera->data.position = {0.0f, 0.0f, 6.0f};
         camera->direction = {0.0f, 0.0f, -1.0f};
         camera->upload();
-        auto texture = interface->createTexture("texture.jpg", 4);
+        auto texture = interface->createTexture("moon.ktx", 4);
         auto sampler = interface->createSampler({
             .magFilter = wen::SamplerFilter::eNearest,
             .minFilter = wen::SamplerFilter::eLinear,

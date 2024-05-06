@@ -22,3 +22,9 @@
 [submodule "3rdlibs/vma"]
 	path = 3rdlibs/vma
 	url = https://github.com/LunarG/VulkanMemoryAllocator.git
+[submodule "3rdlibs/tinygltf"]
+	path = 3rdlibs/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "3rdlibs/KTX-Software"]
+	path = 3rdlibs/KTX-Software
+	url = https://github.com/KhronosGroup/KTX-Software.git

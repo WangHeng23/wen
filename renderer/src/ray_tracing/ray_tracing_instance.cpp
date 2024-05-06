@@ -18,17 +18,11 @@ void RayTracingInstance::addModel(uint32_t id, std::vector<std::shared_ptr<RayTr
     for (auto& model : models) {
         auto& blas = model->modelAs.value()->blas;
         instances_.emplace_back()
-            // 在着色器中被用来区分不同的实例
             .setInstanceCustomIndex(instanceCount_)
-            // 用于在着色器绑定表中找到对应的着色器
             .setInstanceShaderBindingTableRecordOffset(0)
-            // 掩码用于在光线追踪时过滤实例
             .setMask(0xff)
-            // 禁用三角形剔除
             .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable)
-            // 设置加速结构的引用
             .setAccelerationStructureReference(getAccelerationStructureAddress(blas))
-            // 用于将实例的加速结构从模型空间变换到世界空间
             .setTransform(convert<vk::TransformMatrixKHR, const glm::mat4&>(matrix));
         instanceAddresses_.push_back(createInstanceAddress(*model));
         instanceCount_++;

@@ -1,0 +1,22 @@
+option(KTX_FEATURE_TOOLS "Create KTX tools" ON)
+option(KTX_FEATURE_DOC "Create KTX documentation." OFF)
+option(KTX_FEATURE_JNI "Create Java bindings for libktx." OFF)
+option(KTX_FEATURE_PY "Create Python source distribution." OFF)
+option(KTX_FEATURE_TESTS "Create unit tests." OFF)
+option(KTX_FEATURE_TOOLS_CTS "Enable KTX CLI Tools CTS tests (requires CTS submodule)." OFF)
+option(KTX_FEATURE_KTX1 "Enable KTX 1 support." ON)
+option(KTX_FEATURE_KTX2 "Enable KTX 2 support." ON)
+option(KTX_FEATURE_VK_UPLOAD "Enable Vulkan texture upload." ON)
+option(KTX_FEATURE_GL_UPLOAD "Enable OpenGL texture upload." OFF)
+
+if(WIN32)
+    option(KTX_FEATURE_STATIC_LIBRARY "Create static libraries (shared otherwise)." ON)
+
+    if(NOT DEFINED BASH_EXECUTABLE)
+        set(BASH_EXECUTABLE "E:\\Git\\bin\\bash.exe")
+    endif()
+else()
+    option(KTX_FEATURE_STATIC_LIBRARY "Create static libraries (shared otherwise)." OFF)
+endif()
+
+add_subdirectory(KTX-Software)

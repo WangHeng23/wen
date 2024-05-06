@@ -5,6 +5,8 @@
 namespace wen {
 
 class CommandPool final {
+    friend class KtxTexture;
+
 public:
     CommandPool(vk::CommandPoolCreateFlags flags);
     ~CommandPool();
