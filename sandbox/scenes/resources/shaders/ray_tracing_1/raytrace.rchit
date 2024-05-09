@@ -16,7 +16,7 @@ layout(location = 1) rayPayloadEXT bool shadow;
 
 // storage buffer
 layout(binding = 2, set = 0, scalar) buffer InstanceInfo_ {
-    InstanceAddressInfo infos[];
+    RayTracingInstanceAddress infos[];
 } instanceInfo;
 
 layout(push_constant) uniform PushConstant {
@@ -40,7 +40,7 @@ hitAttributeEXT vec3 attribs;
 // gl_InstanceCustomIndexEXT 用于告诉我们光线和哪一个物体相交
 // gl_PrimitiveID 用于找到被击中三角形的顶点信息
 void main() {
-    InstanceAddressInfo info = instanceInfo.infos[gl_InstanceCustomIndexEXT];
+    RayTracingInstanceAddress info = instanceInfo.infos[gl_InstanceCustomIndexEXT];
     Vertices vertices = Vertices(info.vertexBufferAddress);
     Indices indices = Indices(info.indexBufferAddress);
 

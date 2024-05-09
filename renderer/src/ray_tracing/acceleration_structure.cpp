@@ -8,7 +8,6 @@ namespace wen {
 AccelerationStructure::~AccelerationStructure() {
     staging_.reset();
     scratch_.reset();
-    models_.clear();
 }
 
 void AccelerationStructure::addModel(std::shared_ptr<RayTracingModel> model) {
@@ -17,12 +16,24 @@ void AccelerationStructure::addModel(std::shared_ptr<RayTracingModel> model) {
         case RayTracingModel::ModelType::eNormalModel:
             models_.push_back(std::move(std::dynamic_pointer_cast<Model>(model)));
             break;
+        case RayTracingModel::ModelType::eGLTFPrimitive:
+            WEN_ERROR("GLTFPrimitive is used to addScene!")
+            break;
+    }
+}
+
+void AccelerationStructure::addScene(std::shared_ptr<RayTracingScene> scene) {
+    auto type = scene->getType();
+    switch (type) {
+        case RayTracingScene::SceneType::eGLTFScene:
+            scenes_.push_back(std::move(std::dynamic_pointer_cast<GLTFScene>(scene)));
+            break;
     }
 }
 
 void AccelerationStructure::build(bool is_update, bool allow_update) {
     std::vector<AccelerationStructureInfo> infos;
-    infos.reserve(models_.size());
+    infos.reserve(models_.size() + scenes_.size());
 
     uint64_t maxStagingSize = currentStagingSize_, maxScratchSize = currentScratchSize_;
 
@@ -103,6 +114,67 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
         );
         maxScratchSize = std::max(maxScratchSize, is_update ? info.size.updateScratchSize : info.size.buildScratchSize);
     }
+    // 将GLTF场景转变成光追几何体用于构建底层加速结构
+    for (auto& scene : scenes_) {
+        if (!is_update) {
+            uint64_t verticesSize = scene->vertices.size() * sizeof(glm::vec3);
+            uint64_t indicesSize = scene->indices.size() * sizeof(uint32_t);
+            scene->rayTracingVertexBuffer = std::make_unique<Buffer>(
+                verticesSize,
+                vk::BufferUsageFlagBits::eTransferDst |
+                    vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
+                    vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                VMA_MEMORY_USAGE_GPU_ONLY,
+                VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
+            );
+            scene->rayTracingIndexBuffer = std::make_unique<Buffer>(
+                indicesSize,
+                vk::BufferUsageFlagBits::eTransferDst |
+                    vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
+                    vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                VMA_MEMORY_USAGE_GPU_ONLY,
+                VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
+            );
+            maxStagingSize = std::max(maxStagingSize, verticesSize);
+            maxStagingSize = std::max(maxStagingSize, indicesSize);
+        }
+
+        scene->build([&](auto* node, auto primitive) {
+            if (!is_update) {
+                primitive->modelAs = std::make_unique<ModelAccelerationStructure>();
+            }
+            auto& info = infos.emplace_back(*primitive->modelAs.value());
+            uint32_t primitiveCount = primitive->indexCount / 3;
+
+            info.geometryDatas.emplace_back().triangles
+                .setVertexFormat(vk::Format::eR32G32B32Sfloat)
+                .setVertexData(getBufferAddress(scene->rayTracingVertexBuffer->buffer))
+                .setVertexStride(sizeof(glm::vec3))
+                .setIndexType(vk::IndexType::eUint32)
+                .setIndexData(getBufferAddress(scene->rayTracingIndexBuffer->buffer))
+                .setMaxVertex(primitive->vertexCount - 1)
+                .sType = vk::StructureType::eAccelerationStructureGeometryTrianglesDataKHR;
+            info.geometries.emplace_back()
+                .setGeometry(info.geometryDatas.back())
+                .setGeometryType(vk::GeometryTypeKHR::eTriangles)
+                .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+            info.offsets.emplace_back()
+                .setFirstVertex(primitive->data().firstVertex)
+                .setPrimitiveCount(primitiveCount)
+                .setPrimitiveOffset(primitive->data().firstIndex * sizeof(uint32_t))
+                .setTransformOffset(0);
+            info.build
+                .setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
+                .setMode(mode)
+                .setFlags(flags)
+                .setGeometries(info.geometries);
+            info.size = manager->device->device.getAccelerationStructureBuildSizesKHR(
+                vk::AccelerationStructureBuildTypeKHR::eDevice,
+                info.build, primitiveCount, manager->dispatcher
+            );
+            maxScratchSize = std::max(maxScratchSize, is_update ? info.size.updateScratchSize : info.size.buildScratchSize);
+        });
+    }
 
     // create staging and scratch buffers if needed.
     if (maxStagingSize > currentStagingSize_) {
@@ -148,6 +220,17 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
                 indicesSize += size;
             }
             staging_->flush(indicesSize, model->rayTracingIndexBuffer->buffer);
+        }
+        for (auto& scene : scenes_) {
+            auto* ptr = static_cast<uint8_t*>(staging_->map());
+
+            uint64_t verticesSize = scene->vertices.size() * sizeof(glm::vec3);
+            memcpy(ptr, scene->vertices.data(), verticesSize);
+            staging_->flush(verticesSize, scene->rayTracingVertexBuffer->buffer);
+
+            uint64_t indicesSize = scene->indices.size() * sizeof(uint32_t);
+            memcpy(ptr, scene->indices.data(), indicesSize);
+            staging_->flush(indicesSize, scene->rayTracingIndexBuffer->buffer);
         }
         if (staging_.get() != nullptr) {
             staging_->unmap();
@@ -307,6 +390,7 @@ void AccelerationStructure::build(bool is_update, bool allow_update) {
     infos.clear();
     manager->device->device.destroyQueryPool(queryPool);
     models_.clear();
+    scenes_.clear();
 }
 
 } // namespace wen

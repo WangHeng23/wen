@@ -146,7 +146,7 @@ void RayTracing::createAccelerationStructure() {
     accelerationStructure.reset();
 
     instance_ = interface->createRayTracingInstance();
-    instance_->addModel(0, {model1_, model2_}, glm::mat4(1.0f));
+    instance_->addModels(0, {model1_, model2_}, glm::mat4(1.0f));
     std::random_device device;
     std::mt19937 generator(device());
     std::normal_distribution<float> distribution(0, 1);
@@ -162,9 +162,9 @@ void RayTracing::createAccelerationStructure() {
             glm::translate(position) *
             glm::rotate(rotateAngle, rotateAxis) *
             glm::scale(glm::mat4(1.0f), glm::vec3(scale));
-        instance_->addModel(1, {model3_}, transform);
+        instance_->addModels(1, {model3_}, transform);
     }
-    instance_->addModel(2, {model1_}, glm::mat4(1.0f));
+    instance_->addModels(2, {model1_}, glm::mat4(1.0f));
     transformInfos[2].push_back({
         glm::vec3(2.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),

@@ -15,6 +15,7 @@ class RayTracingModel {
 public:
     enum class ModelType {
         eNormalModel,
+        eGLTFPrimitive,
     };
 
 public:

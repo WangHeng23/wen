@@ -14,7 +14,7 @@ RayTracingInstance::~RayTracingInstance() {
     buffer_.reset();
 }
 
-void RayTracingInstance::addModel(uint32_t id, std::vector<std::shared_ptr<RayTracingModel>> models, const glm::mat4& matrix) {
+void RayTracingInstance::addModels(uint32_t id, std::vector<std::shared_ptr<RayTracingModel>> models, const glm::mat4& matrix) {
     for (auto& model : models) {
         auto& blas = model->modelAs.value()->blas;
         instances_.emplace_back()
@@ -28,6 +28,23 @@ void RayTracingInstance::addModel(uint32_t id, std::vector<std::shared_ptr<RayTr
         instanceCount_++;
         groups_[id].count++;
     }
+}
+
+void RayTracingInstance::addScene(uint32_t id, std::shared_ptr<RayTracingScene> scene) {
+    auto gltf = std::dynamic_pointer_cast<GLTFScene>(scene);
+    gltf->build([&](auto* node, auto primitive) {
+        instances_.emplace_back()
+            .setInstanceCustomIndex(instanceCount_)
+            .setInstanceShaderBindingTableRecordOffset(0)
+            .setMask(0xff)
+            .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable)
+            .setAccelerationStructureReference(getAccelerationStructureAddress(primitive->modelAs.value()->blas))
+            .setTransform(convert<vk::TransformMatrixKHR, const glm::mat4&>(node->getWorldMatrix()));
+        instanceAddresses_.push_back(createInstanceAddress(*primitive));
+        primitiveDatas_.push_back(primitive->data());
+        instanceCount_++;
+        groups_[id].count++;
+    });
 }
 
 void RayTracingInstance::build(bool allow_update) {
@@ -48,7 +65,7 @@ void RayTracingInstance::build(bool allow_update) {
         VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
     );
     auto* ptr = static_cast<uint8_t*>(instanceBuffer_->map());
-    memcpy(ptr, instances_.data(), instanceCount_ * sizeof(vk::AccelerationStructureInstanceKHR));
+    memcpy(ptr, instances_.data(), instanceBuffer_->size);
 
     // 将之前拷贝上传的实体设备内存进行设置打包
     vk::AccelerationStructureGeometryInstancesDataKHR geometryInstances = {};
@@ -173,12 +190,17 @@ void RayTracingInstance::update(uint32_t id, FunUpdateCallback callback) {
     manager->commandPool->freeSingleUse(cmdbuf);
 }
 
-RayTracingInstanceAddress RayTracingInstance::createInstanceAddress(RayTracingModel& model) {
+InstanceAddress RayTracingInstance::createInstanceAddress(RayTracingModel& model) {
     switch (model.getType()) {
         case RayTracingModel::ModelType::eNormalModel:
             return {
                 getBufferAddress(dynamic_cast<Model&>(model).rayTracingVertexBuffer->buffer),
                 getBufferAddress(dynamic_cast<Model&>(model).rayTracingIndexBuffer->buffer),
+            };
+        case RayTracingModel::ModelType::eGLTFPrimitive:
+            return {
+                getBufferAddress(dynamic_cast<GLTFPrimitive&>(model).scene_.rayTracingVertexBuffer->buffer),
+                getBufferAddress(dynamic_cast<GLTFPrimitive&>(model).scene_.rayTracingIndexBuffer->buffer),
             };
     }
 }

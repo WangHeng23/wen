@@ -18,7 +18,7 @@ struct SamplerInfos {
 
 class Sampler final {
 public:
-    Sampler(const SamplerInfos& infos);
+    Sampler(const SamplerInfos& infos = {});
     ~Sampler();
 
     vk::Sampler sampler;

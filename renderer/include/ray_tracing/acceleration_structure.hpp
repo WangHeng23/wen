@@ -2,6 +2,7 @@
 
 #include "storage/storage_buffer.hpp"
 #include "resources/model.hpp"
+#include "ray_tracing/gltf/gltf_scene.hpp"
 
 namespace wen {
 
@@ -23,6 +24,7 @@ public:
     AccelerationStructure() = default;
     ~AccelerationStructure();
     void addModel(std::shared_ptr<RayTracingModel> model);
+    void addScene(std::shared_ptr<RayTracingScene> scene);
     void build(bool is_update, bool allow_update);
 
 private:
@@ -31,6 +33,7 @@ private:
     std::unique_ptr<StorageBuffer> scratch_ = {};
     uint64_t currentScratchSize_ = 0;
     std::vector<std::shared_ptr<Model>> models_ = {};
+    std::vector<std::shared_ptr<GLTFScene>> scenes_ = {};
 };
 
 } // namespace wen

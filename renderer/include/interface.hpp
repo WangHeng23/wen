@@ -20,6 +20,7 @@
 #include "ray_tracing/render_pipeline.hpp"
 #include "ray_tracing/acceleration_structure.hpp"
 #include "ray_tracing/ray_tracing_instance.hpp"
+#include "ray_tracing/gltf/gltf_scene.hpp"
 
 namespace wen {
 
@@ -48,12 +49,14 @@ public:
     std::shared_ptr<RayTracingRenderPipeline> createRayTracingRenderPipeline(std::shared_ptr<RayTracingShaderProgram> shaderProgram);
     std::shared_ptr<AccelerationStructure> createAccelerationStructure();
     std::shared_ptr<RayTracingInstance> createRayTracingInstance();
+    std::shared_ptr<GLTFScene> loadGLTFScene(const std::string& filename, const std::vector<std::string>& attrs = {});
 
 private:
     std::string path_;
     std::string shaderDir_;
     std::string textureDir_;
     std::string modelDir_;
+    std::string gltfDir_;
 };
 
 } // namespace wen
